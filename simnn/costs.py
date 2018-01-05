@@ -10,7 +10,7 @@ class CrossEntropy(object):
         rep_str = '{}\n'.format(self.name)
         return rep_str
 
-    def function_call(self, t, y, epsilon=1e-9):
+    def fprop(self, t, y, epsilon=1e-9):
         assert isinstance(t, np.ndarray)
         assert isinstance(y, np.ndarray)
         assert y.shape == t.shape

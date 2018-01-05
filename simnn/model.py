@@ -68,7 +68,7 @@ class Model(object):
                 layer.fprop(layer.prev_layer.out)
             self.y = self.layers[-1].out
 
-            costs.append(self.cost.function_call(t, self.y, epsilon=1e-9))
+            costs.append(self.cost.fprop(t, self.y, epsilon=1e-9))
 
             # backwards pass with errors
             error = self.cost.bprop(t, self.y)

@@ -13,7 +13,7 @@ class Sigmoid(object):
         rep_str = '{}'.format(self.name)
         return rep_str
 
-    def function_call(self, x):
+    def fprop(self, x):
         '''
         sigmoid function implimentation
 
@@ -22,7 +22,7 @@ class Sigmoid(object):
         '''
         return 1 / (1 + np.exp(-x))
 
-    def derivative(self, y):
+    def bprop(self, y):
         return self.function_call(y) * self.function_call(-y)
 
 
@@ -36,7 +36,7 @@ class Softmax(object):
         rep_str = '{}, n_stable: {}'.format(self.name, self.n_stable)
         return rep_str
 
-    def function_call(self, x):
+    def fprop(self, x):
         '''
         Neumerically stable softmax of the vector x
 
@@ -51,7 +51,7 @@ class Softmax(object):
         out = np.exp(x)
         return out / np.sum(out, axis=1)[:, np.newaxis]
 
-    def derivative(self, y):
+    def bprop(self, y):
         return 1
 
 
@@ -64,7 +64,7 @@ class ReLU(object):
         rep_str = '{}'.format(self.name)
         return rep_str
 
-    def function_call(self, x):
+    def fprop(self, x):
         '''
         :param: x
         :type: np.ndarray
@@ -75,7 +75,7 @@ class ReLU(object):
 
         return self.x
 
-    def derivative(self, y):
+    def bprop(self, y):
         return (self.x > 0).astype(np.int)
 
 
@@ -94,7 +94,7 @@ class Line(object):
         rep_str = '{}X + {}, '.format(self.a, self.b)
         return rep_str
 
-    def function_call(self, x):
+    def fprop(self, x):
         '''
         :param: x
         :type: np.ndarray
@@ -103,7 +103,7 @@ class Line(object):
 
         return self.a * x + self.b
 
-    def derivative(self, y):
+    def bprop(self, y):
         return self.a
 
 

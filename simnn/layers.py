@@ -43,7 +43,7 @@ class Linear(object):
 
         self.lin_out = self.x.dot(self.W)
 
-        self.out = self.activation.function_call(self.lin_out)
+        self.out = self.activation.fprop(self.lin_out)
 
         # add bias is asked
         if self.bias:
@@ -58,7 +58,7 @@ class Linear(object):
             self.deltas_avg = self.deltas
 
         else:
-            d_activation = self.activation.derivative(self.lin_out)
+            d_activation = self.activation.bprop(self.lin_out)
 
             # delta based on non-linearity and prev deltas
             self.deltas_avg = self.next_layer.deltas.dot(self.next_layer.W.T)
