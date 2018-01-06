@@ -51,35 +51,23 @@ class Linear(object):
 
         return self.out
 
-    def bporp(self, error, alpha):
+    def bporp(self, p_deltas, alpha):
+        # bprop deltas through activation
+        d_activation = self.activation.bprop(self.lin_out)
+        p_deltas = d_activation * p_deltas
 
-        if self.next_layer is None:
-            self.deltas = error  # difference based on loss ????
-            self.deltas_avg = self.deltas
+        # create layers deltas
+        self.deltas = p_deltas.dot(self.W.T)
 
-        else:
-            d_activation = self.activation.bprop(self.lin_out)
-
-            # delta based on non-linearity and prev deltas
-            self.deltas_avg = self.next_layer.deltas.dot(self.next_layer.W.T)
-
-            self.deltas = d_activation * self.deltas_avg
-
-        self._weight_update(alpha)
+        # update weights based on deltas
+        self._weight_update(p_deltas, alpha)
 
         # return deltas
         return self.deltas
 
-    def _weight_update(self, alpha):
+    def _weight_update(self, p_deltas, alpha):
         # compute Gradient
-        d_W = self.x.T.dot(self.deltas)  # create weight gradient
+        d_W = self.x.T.dot(p_deltas)  # create weight gradient
 
         # update weights by taking gradient step
         self.W -= alpha * d_W
-
-        if self.bias:
-            # create weight gradient
-            d_W_bias = np.sum(self.deltas_avg, axis=0)
-
-            # update weights by taking gradient step
-            self.W_bias -= alpha * d_W_bias

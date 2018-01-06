@@ -7,7 +7,8 @@ SIMNN has implemented:
 - NN model
 - layers
 	- Linear
-		- bias in the Linear Layer (might be buggy)
+		- bias in the Linear Layer (planned)
+		- weight regularization (planned)
 	- Conv (planned)
 	- Dropout (planned)
 - activations
