@@ -23,7 +23,7 @@ class Sigmoid(object):
         return 1 / (1 + np.exp(-x))
 
     def bprop(self, y):
-        return self.function_call(y) * self.function_call(-y)
+        return self.fprop(y) * self.fprop(-y)
 
 
 class Softmax(object):

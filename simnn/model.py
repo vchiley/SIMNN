@@ -72,7 +72,6 @@ class Model(object):
 
             # backwards pass with errors
             error = self.cost.bprop(t, self.y)
-
             for layer in self.layers[::-1]:
                 error = layer.bporp(error, nu)
 
