@@ -17,6 +17,7 @@ class Model(object):
         # define and initialize layers
         self.layers = layers
 
+        # flatten activation layer with affine layers
         for i, layer in enumerate(self.layers):
             if layer.activation is not None:
                 self.layers[i:i + 1] = [layer, layer.activation]
