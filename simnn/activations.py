@@ -26,9 +26,9 @@ class Sigmoid(Layer):
         '''
         self.x = x
 
-        self.out = 1 / (1 + np.exp(-self.x))
+        self.y = 1 / (1 + np.exp(-self.x))
 
-        return self.out
+        return self.y
 
     def bprop(self, p_deltas, alpha):
         return self.fprop(self.x) * self.fprop(-self.x) * p_deltas
@@ -62,9 +62,9 @@ class Softmax(Layer):
 
         out = np.exp(x)
 
-        self.out = out / np.sum(out, axis=1)[:, np.newaxis]
+        self.y = out / np.sum(out, axis=1)[:, np.newaxis]
 
-        return self.out
+        return self.y
 
     def bprop(self, p_deltas, alpha):
         return 1 * p_deltas
@@ -90,9 +90,9 @@ class ReLU(Layer):
         self.x = x
         x[x < 0] = 0
 
-        self.out = x
+        self.y = x
 
-        return self.out
+        return self.y
 
     def bprop(self, p_deltas, alpha):
         return (self.x > 0).astype(np.float) * p_deltas
@@ -125,9 +125,9 @@ class Line(Layer):
 
         self.x = x
 
-        self.out = self.a * x + self.b
+        self.y = self.a * x + self.b
 
-        return self.out
+        return self.y
 
     def bprop(self, p_deltas, alpha):
         return self.a * p_deltas

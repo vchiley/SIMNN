@@ -69,8 +69,8 @@ class Model(object):
             # forward pass through the network
             self.layers[0].fprop(x)
             for layer in self.layers[1:]:
-                layer.fprop(layer.prev_layer.out)
-            self.y = self.layers[-1].out
+                layer.fprop(layer.prev_layer.y)
+            self.y = self.layers[-1].y
 
             costs.append(self.cost.fprop(t, self.y, epsilon=1e-9))
 

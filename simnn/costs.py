@@ -17,7 +17,9 @@ class CrossEntropy(object):
 
         y = np.clip(y, epsilon, 1.)  # ensure log(0) doesn't happen
 
-        return - np.sum(t * np.log(y))
+        self.y = - np.sum(t * np.log(y))
+
+        return self.y
 
     def bprop(self, t, y):
         return y - t
