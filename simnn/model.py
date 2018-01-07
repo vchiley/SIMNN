@@ -17,6 +17,10 @@ class Model(object):
         # define and initialize layers
         self.layers = layers
 
+        for i, layer in enumerate(self.layers):
+            if layer.activation is not None:
+                self.layers[i:i + 1] = [layer, layer.activation]
+
         self.out_shape = self.layers[-1].out_shape
 
         # Define previous layers for network
@@ -73,7 +77,7 @@ class Model(object):
             # backwards pass with errors
             error = self.cost.bprop(t, self.y)
             for layer in self.layers[::-1]:
-                error = layer.bporp(error, nu)
+                error = layer.bprop(error, nu)
 
             # get error rate for classification problems
             if self.class_task:
