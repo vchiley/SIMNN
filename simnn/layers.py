@@ -2,12 +2,14 @@ import numpy as np
 
 
 # layer types
-class Linear(object):
+class Layer(object):
 
-    def __init__(self, out_shape, activation, bias=False,
-                 in_shape=None, init=.1, name='Linear Layer'):
+    def __init__(self, out_shape, activation=None, bias=False,
+                 in_shape=None, init=.1, name='Layer'):
 
-        assert isinstance(out_shape, int), 'alpha must be a number'
+        if out_shape:
+            assert isinstance(out_shape, int), 'out_shape must be a number'
+        assert isinstance(name, str), 'Name must be of type string'
 
         self.out_shape = out_shape
         self.activation = activation
@@ -19,12 +21,14 @@ class Linear(object):
         self.prev_layer = None
         self.name = name
 
+        if self.activation:
+            self.activation.out_shape = self.out_shape
+
     def __repr__(self):
         rep_str = '{}, '.format(self.name)
         rep_str += 'in_shape: {}, '.format(self.in_shape)
         rep_str += 'out_shape: {}, '.format(self.out_shape)
-        rep_str += 'with bias: {}, '.format(self.bias)
-        rep_str += 'and activation: {}\n'.format(self.activation)
+        rep_str += 'and has bias: {}, \n'.format(self.bias)
 
         return rep_str
 
@@ -32,6 +36,19 @@ class Linear(object):
         # get inshape from previous layer
         if self.in_shape is None:
             self.in_shape = self.prev_layer.out_shape
+
+    def allocate(self):
+        pass
+
+
+class Linear(Layer):
+
+    def __init__(self, out_shape, activation=None, bias=False,
+                 in_shape=None, init=.1, name='Linear Layer'):
+
+        super(Linear, self).__init__(out_shape, activation=activation,
+                                     bias=bias, in_shape=in_shape, init=init,
+                                     name='Linear Layer')
 
     def allocate(self):
         self.W = self.init * np.random.randn(self.in_shape, self.out_shape)
@@ -51,12 +68,8 @@ class Linear(object):
 
         return self.out
 
-    def bporp(self, p_deltas, alpha):
-        # bprop deltas through activation
-        d_activation = self.activation.bprop(self.lin_out)
-        p_deltas = d_activation * p_deltas
-
-        # create layers deltas
+    def bprop(self, p_deltas, alpha):
+        # create layers deltas i.e. transform deltas using linear layer
         self.deltas = p_deltas.dot(self.W.T)
 
         # update weights based on deltas
