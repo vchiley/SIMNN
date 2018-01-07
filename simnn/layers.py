@@ -38,19 +38,25 @@ class Layer(object):
             self.in_shape = self.prev_layer.out_shape
 
     def allocate(self):
+        '''
+        allocate parameters of model
+        '''
         pass
 
 
 class Linear(Layer):
 
     def __init__(self, out_shape, activation=None, bias=False,
-                 in_shape=None, init=.1, name='Linear Layer'):
+                 in_shape=None, init=.1, name='Linear Layer',
+                 regularization_weight=None):
 
         super(Linear, self).__init__(out_shape, activation=activation,
                                      bias=bias, in_shape=in_shape, init=init,
                                      name='Linear Layer')
+        self.regularization_weight = regularization_weight
 
     def allocate(self):
+        # allocate parameters of layer
         self.W = self.init * np.random.randn(self.in_shape, self.out_shape)
         if self.bias:
             self.W_bias = self.init * np.random.randn(1, self.out_shape)
@@ -60,27 +66,29 @@ class Linear(Layer):
 
         self.lin_out = self.x.dot(self.W)
 
-        self.out = self.activation.fprop(self.lin_out)
+        self.y = self.activation.fprop(self.lin_out)
 
         # add bias is asked
         if self.bias:
-            self.out += self.W_bias
+            self.y += self.W_bias
 
-        return self.out
+        return self.y
 
     def bprop(self, p_deltas, alpha):
         # create layers deltas i.e. transform deltas using linear layer
         self.deltas = p_deltas.dot(self.W.T)
 
         # update weights based on deltas
-        self._weight_update(p_deltas, alpha)
+        self._param_update(p_deltas, alpha)
 
         # return deltas
         return self.deltas
 
-    def _weight_update(self, p_deltas, alpha):
+    def _param_update(self, p_deltas, alpha):
         # compute Gradient
         d_W = self.x.T.dot(p_deltas)  # create weight gradient
+        if self.regularization_weight:
+            d_W -= self.regularization_weight / alpha * self.W
 
         # update weights by taking gradient step
         self.W -= alpha * d_W
