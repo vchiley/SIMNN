@@ -46,7 +46,7 @@ class Layer(object):
 
 class Linear(Layer):
 
-    def __init__(self, out_shape, activation=None, bias=False,
+    def __init__(self, out_shape, activation=None, bias=True,
                  in_shape=None, init=.1, name='Linear Layer',
                  regularization_weight=None):
 
@@ -57,26 +57,36 @@ class Linear(Layer):
 
     def allocate(self):
         # allocate parameters of layer
-        self.W = self.init * np.random.randn(self.in_shape, self.out_shape)
         if self.bias:
-            self.W_bias = self.init * np.random.randn(1, self.out_shape)
+            self.W = self.init * np.random.randn(self.in_shape + 1,
+                                                 self.out_shape)
+        else:
+            self.W = self.init * np.random.randn(self.in_shape, self.out_shape)
+        # if self.bias:
+        #     self.W_bias = self.init * np.random.randn(1, self.out_shape)
 
     def fprop(self, x):
-        self.x = x
+        if self.bias:
+            self.x = np.hstack([x, np.ones(x.shape[0])[:, np.newaxis]])
+        else:
+            self.x = x
 
         self.lin_out = self.x.dot(self.W)
 
         self.y = self.activation.fprop(self.lin_out)
 
-        # add bias is asked
-        if self.bias:
-            self.y += self.W_bias
+        # # add bias is asked
+        # if self.bias:
+        #     self.y += self.W_bias
 
         return self.y
 
     def bprop(self, p_deltas, alpha):
         # create layers deltas i.e. transform deltas using linear layer
-        self.deltas = p_deltas.dot(self.W.T)
+        if self.bias:
+            self.deltas = p_deltas.dot(self.W.T)[:, :-1]
+        else:
+            self.deltas = p_deltas.dot(self.W.T)
 
         # update weights based on deltas
         self._param_update(p_deltas, alpha)
