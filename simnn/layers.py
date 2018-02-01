@@ -88,10 +88,10 @@ class Linear(Layer):
 
     def _param_update(self, p_deltas, alpha):
         # compute Gradient
-        d_W = self.x.T.dot(p_deltas)  # create weight gradient
-        d_b = np.sum(p_deltas, axis=0)  # create bias gradient
+        self.d_W = self.x.T.dot(p_deltas)  # create weight gradient
+        self.d_b = np.sum(p_deltas, axis=0)  # create bias gradient
 
         # update weights by taking gradient step
-        self.W -= alpha * d_W
+        self.W -= alpha * self.d_W
         # update bias by taking gradient step
-        self.b -= alpha * d_b
+        self.b -= alpha * self.d_b
