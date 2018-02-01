@@ -1,4 +1,14 @@
+#!/usr/bin/env python
+"""
+Impliments model object for SIMNN
+"""
+__author__ = 'Vitaliy Chiley'
+__date__ = '01/2018'
+
 import numpy as np
+
+from simnn.activations import *
+from simnn.costs import *
 
 
 class Model(object):
@@ -43,6 +53,8 @@ class Model(object):
         # define cost
         self.cost = cost
 
+        self._set_shortcut()
+
     def __repr__(self):
         rep_str = '{}, '.format(self.name)
         rep_str += 'in_shape: {}, '.format(self.in_shape)
@@ -54,39 +66,110 @@ class Model(object):
 
         return rep_str
 
+    def _set_shortcut(self):
+        if isinstance(self.cost, CrossEntropy):
+            if isinstance(self.layers[-1], Softmax):
+                self.layers[-1].shortcut = True
+
+        if isinstance(self.cost, BinaryCrossEntropy):
+            if isinstance(self.layers[-1], Logistic_Sigmoid):
+                self.layers[-1].shortcut = True
+
     def _error_rate(self, t, y):
         t_c = t.argmax(axis=1)
         y_c = y.argmax(axis=1)
 
         return np.sum(t_c != y_c) / len(t_c)
 
-    def fit(self, dataset, num_epochs, nu=1e-5, prnt=True):
-        x, t = dataset
+    def _check_data(self, X, Y):
+        assert isinstance(X, np.ndarray), 'Input must be a numpy array'
+        assert isinstance(Y, np.ndarray), 'Input must be a numpy array'
+        assert len(X) == len(Y), 'each example in X must have a label'
+
+    def _learn_anneal(self, t):
+        self.nu = self.initial_learn / (1 + t / self.T)
+
+    def _b_idx_gen(self, all_idx, b_size):
+        '''
+        Yield successive b_size-sized chunks from all_idxs
+        adopted from:
+        https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
+        '''
+        for i in range(0, len(all_idx), b_size):
+            yield all_idx[i:i + b_size]
+
+    def _ep_fit(self, verbose):
+        assert -1 <= self.b_size <= len(self.X), 'b_size out of range'
+        if self.b_size == -1:
+            # get all the trainset indecies
+            all_idx = np.arange(len(self.X))
+            if self.shuffle:
+                np.random.shuffle(all_idx)  # shuffle dataset
+
+            x, t = self.X[all_idx], self.target[all_idx]
+
+            y = self.net_fprop(x)  # forward pass
+            self.net_bprop(t, y)  # update weights
+        else:
+            # batched learning
+            if len(self.X) % self.b_size != 0:
+                warnings.warn('Training set not split equally by b_size')
+
+            all_idx = np.arange(len(self.X))
+            if self.shuffle:
+                np.random.shuffle(all_idx)  # shuffle dataset
+
+            # loop through batches from the trainset
+            b_idxing = self._b_idx_gen(all_idx, self.b_size)
+            for b_it, b_idx in enumerate(b_idxing):
+                x, t = self.X[b_idx], self.target[b_idx]
+
+                y = self.net_fprop(x)  # forward pass
+                # b_prop errors and update weights
+                self.net_bprop(t, y)
+
+    def net_fprop(self, x):
+        # forward pass through the network
+        self.layers[0].fprop(x)
+        for layer in self.layers[1:]:
+            layer.fprop(layer.prev_layer.y)
+        return self.layers[-1].y
+
+    def net_bprop(self, target, y):
+        # backwards pass with errors
+        error = self.cost.bprop(target, y)
+        for layer in self.layers[::-1]:
+            error = layer.bprop(error, self.nu)
+
+    def fit(self, dataset, num_epochs, initial_learn=1e-3, aneal_T=30,
+            shuffle=True, b_size=-1, verbose=True):
+        self.X, self.target = dataset
+        self._check_data(self.X, self.target)
+
+        self.b_size = b_size
+        self.shuffle = shuffle
+        self.initial_learn = initial_learn
+        self.T = aneal_T
 
         costs = []
         err_rate = []
         for epoch in range(num_epochs):
 
-            # forward pass through the network
-            self.layers[0].fprop(x)
-            for layer in self.layers[1:]:
-                layer.fprop(layer.prev_layer.y)
-            self.y = self.layers[-1].y
+            self._learn_anneal(epoch)
 
-            costs.append(self.cost.fprop(t, self.y, epsilon=1e-9))
+            self._ep_fit(verbose)
 
-            # backwards pass with errors
-            error = self.cost.bprop(t, self.y)
-            for layer in self.layers[::-1]:
-                error = layer.bprop(error, nu)
+            y = self.net_fprop(self.X)
+
+            costs.append(self.cost.fprop(self.target, y))
 
             # get error rate for classification problems
             if self.class_task:
-                err_rate.append(self._error_rate(t, self.y))
+                err_rate.append(self._error_rate(self.target, y))
 
-            if prnt:
+            if verbose:
                 print_str = 'Epoch {} of {}'.format(epoch, num_epochs)
                 print_str += ', cost: {}'.format(costs[-1])
                 print(print_str)
 
-        return self.y, costs, err_rate
+        return y, costs, err_rate
