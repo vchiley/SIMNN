@@ -127,16 +127,21 @@ class ReLU(Layer):
         '''
         assert isinstance(x, np.ndarray), 'must be a numpy vector'
         self.x = x.copy()
-        x[x < 0] = 0
 
-        self.y = x
+        self.y = x.copy()
+        self.y[np.where(self.y < 0)] = 0
 
         return self.y
 
     def bprop(self, p_deltas, alpha, use_y=False):
         if self.use_y:
-            return (self.y > 0).astype(np.float) * p_deltas
-        return (self.x > 0).astype(np.float) * p_deltas
+            return np.sign(self.y).astype(np.float) * p_deltas
+
+        x = self.x.copy()
+
+        x[np.where(x < 0)] = 0
+
+        return np.sign(x).astype(np.float) * p_deltas
 
 
 class Line(Layer):
