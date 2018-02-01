@@ -6,3 +6,4 @@ dataset/bin_mnist_35/new_test5.txt
 dataset/bin_mnist_35/new_train3.txt
 dataset/bin_mnist_35/new_train5.txt
 python_dev.ipynb
+*-ubyte.gz
