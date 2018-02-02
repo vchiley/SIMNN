@@ -6,9 +6,8 @@ An example of how to use it can be found as an ipython notebook in example.ipynb
 SIMNN has implemented:
 - NN model
 - layers
-	- Linear
-		- bias in the Linear Layer (planned)
-		- weight regularization (planned)
+	- Linear (Actually Affine)
+	- PM_BN: 'Poor Mans Batch Normalization'
 	- Conv (planned)
 	- Dropout (planned)
 - activations
@@ -17,5 +16,7 @@ SIMNN has implemented:
 	- ReLU
 - costs
 	- CrossEntropy
-	- SquareEror
+	- BinaryCrossEntropy
+	- SquaredError (planned)
+	- AbsoluteError (planned)
 An environment.yml file is provided which describes my current environment.

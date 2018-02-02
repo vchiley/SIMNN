@@ -117,8 +117,7 @@ class PM_BN(Layer):
             warnings.warn('Layer assumes a bias, Bias=False overridden')
 
     def __repr__(self):
-        rep_str = '{}, '.format(self.name)
-
+        rep_str = '{}\n'.format(self.name)
         return rep_str
 
     def allocate(self):
@@ -130,8 +129,7 @@ class PM_BN(Layer):
 
         self.y = self.x - np.mean(self.x, axis=0)
 
-        if self.bias:
-            self.y += self.b
+        self.y += self.b  # learned undo of mean centering
 
         return self.y
 
