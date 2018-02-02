@@ -15,7 +15,7 @@ class CrossEntropy(object):
         self.ep_clip = ep_clip
 
     def __repr__(self):
-        rep_str = '{}\n'.format(self.name)
+        rep_str = '{}'.format(self.name)
         return rep_str
 
     def fprop(self, t, y):
@@ -44,7 +44,7 @@ class BinaryCrossEntropy(object):
         self.ep_clip = ep_clip
 
     def __repr__(self):
-        rep_str = '{}\n'.format(self.name)
+        rep_str = '{}'.format(self.name)
         return rep_str
 
     def fprop(self, t, y):
