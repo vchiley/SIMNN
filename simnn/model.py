@@ -221,7 +221,7 @@ class Model(object):
 
     def fit(self, dataset, num_epochs, val_set=None, initial_learn=1e-3,
             aneal_T=30, shuffle=True, b_size=-1, verbose=True,
-            early_stop_eps=1e-32, min_epochs=10, e_stop_n=3):
+            early_stop_eps=1e-32, min_epochs=10, e_stop_n=3, e_stop=False):
         self.X, self.target = dataset
         self._check_data(self.X, self.target)
 
@@ -249,7 +249,7 @@ class Model(object):
             self._epoch_stats(epoch, verbose)
 
             # check for early stop
-            if epoch > e_stop_n + 1:
+            if e_stop and epoch > e_stop_n + 1:
                 if self.X_val is not None:
                     self._early_stop_acc(self.v_cost_e,
                                          early_stop_eps, e_stop_n)
