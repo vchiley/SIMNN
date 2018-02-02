@@ -116,6 +116,11 @@ class PM_BN(Layer):
         if bias is False:
             warnings.warn('Layer assumes a bias, Bias=False overridden')
 
+    def __repr__(self):
+        rep_str = '{}, '.format(self.name)
+
+        return rep_str
+
     def allocate(self):
         # allocate parameters of layer
         _, self.b = initializer(self)
