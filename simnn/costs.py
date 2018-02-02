@@ -22,6 +22,7 @@ class CrossEntropy(object):
         assert isinstance(t, np.ndarray)
         assert isinstance(y, np.ndarray)
         assert y.shape == t.shape
+        assert np.in1d(t, np.array([0, 1])).all(), 'assumes one-hot bin labels'
 
         y = np.clip(y, self.ep_clip, 1.)  # ensure log(0) doesn't happen
 
@@ -50,6 +51,7 @@ class BinaryCrossEntropy(object):
         assert isinstance(t, np.ndarray)
         assert isinstance(y, np.ndarray)
         assert y.shape == t.shape
+        assert np.in1d(t, np.array([0, 1])).all(), 'assumes binary labels'
 
         y = np.clip(y, self.ep_clip, 1.)  # ensure log(0) doesn't happen
 

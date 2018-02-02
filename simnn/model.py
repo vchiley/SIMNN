@@ -64,6 +64,8 @@ class Model(object):
 
         self._set_shortcut()
 
+        self.early_stop = False
+
     def __repr__(self):
         rep_str = '{}, '.format(self.name)
         rep_str += 'in_shape: {}, '.format(self.in_shape)
@@ -92,6 +94,16 @@ class Model(object):
         if isinstance(self.cost, BinaryCrossEntropy):
             if isinstance(self.layers[-1], Logistic_Sigmoid):
                 self.layers[-1].shortcut = True
+
+    def _early_stop_acc(self, metric, eps, n):
+        '''
+        if metric doesnt improve, stop the network
+        '''
+        dif = np.array(metric[-(n + 1):-1]) - np.array(metric[-n:])
+        if all(dif <= -eps):
+            self.early_stop = True
+        else:
+            self.early_stop = False
 
     def _error_rate(self, t, y):
         t_c = t.argmax(axis=1)
@@ -208,7 +220,8 @@ class Model(object):
             print_epochs(verbose_str)
 
     def fit(self, dataset, num_epochs, val_set=None, initial_learn=1e-3,
-            aneal_T=30, shuffle=True, b_size=-1, verbose=True):
+            aneal_T=30, shuffle=True, b_size=-1, verbose=True,
+            early_stop_eps=1e-32, min_epochs=10, e_stop_n=3):
         self.X, self.target = dataset
         self._check_data(self.X, self.target)
 
@@ -234,3 +247,14 @@ class Model(object):
             self._ep_fit(verbose)
 
             self._epoch_stats(epoch, verbose)
+
+            # check for early stop
+            if epoch > e_stop_n + 1:
+                if self.X_val is not None:
+                    self._early_stop_acc(self.v_cost_e,
+                                         early_stop_eps, e_stop_n)
+                else:
+                    self._early_stop_acc(self.cost_e, early_stop_eps, e_stop_n)
+                if self.early_stop and epoch >= min_epochs:
+                    print('\nStopping Early!!!!')
+                    return

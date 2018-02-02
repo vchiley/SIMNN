@@ -6,6 +6,8 @@ __author__ = 'Vitaliy Chiley'
 __date__ = '01/2018'
 
 import numpy as np
+import warnings
+
 from simnn.initializer import initializer
 
 
@@ -54,13 +56,11 @@ class Layer(object):
 class Linear(Layer):
 
     def __init__(self, out_shape, activation=None, bias=True,
-                 in_shape=None, init=.1, name='Linear Layer',
-                 regularization_weight=None):
+                 in_shape=None, init=.1, name='Linear Layer'):
 
         super(Linear, self).__init__(out_shape, activation=activation,
                                      bias=bias, in_shape=in_shape, init=init,
                                      name='Linear Layer')
-        self.regularization_weight = regularization_weight
 
     def allocate(self):
         # allocate parameters of layer
@@ -93,5 +93,56 @@ class Linear(Layer):
 
         # update weights by taking gradient step
         self.W -= alpha * self.d_W
+        # update bias by taking gradient step
+        self.b -= alpha * self.d_b
+
+
+class PM_BN(Layer):
+
+    '''
+    "Poor Man Batch Normilization Layer" only mean centers the data
+    does not actually z-score the batch
+    '''
+
+    def __init__(self, out_shape, activation=None, bias=True,
+                 in_shape=None, init=.1, name='Linear Layer'):
+
+        super(PM_BN, self).__init__(out_shape, activation=activation,
+                                    bias=True, in_shape=in_shape, init=init,
+                                    name='PM_BN')
+
+        self.in_shape = out_shape
+
+        if bias is False:
+            warnings.warn('Layer assumes a bias, Bias=False overridden')
+
+    def allocate(self):
+        # allocate parameters of layer
+        _, self.b = initializer(self)
+
+    def fprop(self, x):
+        self.x = x.copy()
+
+        self.y = self.x - np.mean(self.x, axis=0)
+
+        if self.bias:
+            self.y += self.b
+
+        return self.y
+
+    def bprop(self, p_deltas, alpha):
+        # create layers deltas i.e. transform deltas using linear layer
+        self.deltas = p_deltas
+
+        # update weights based on deltas
+        self._param_update(p_deltas, alpha)
+
+        # return deltas
+        return self.deltas
+
+    def _param_update(self, p_deltas, alpha):
+        # compute Gradient
+        self.d_b = np.sum(p_deltas, axis=0)  # create bias gradient
+
         # update bias by taking gradient step
         self.b -= alpha * self.d_b
