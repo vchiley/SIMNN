@@ -20,6 +20,15 @@ from dataset.mnist.mnist import load_mnist_data
 
 
 def _numerical_grad(self, data, weight_def, epsilon):
+    '''
+    It's a numerical approximation of the gradient
+
+    neumerical gradient should be withing \epsilon^2 of the real gradient
+    with exessively small \epsilon computational roundoff error makes the
+    error larger. If running tests with numerical grad checker, sometimes it
+    will fail because initializations of the networks are random and
+    probabilistically test failure occures, but rarely
+    '''
     x, t = data
     assert len(t) == 1
     assert isinstance(weight_def, tuple), 'weight_def is tuple description'
@@ -65,13 +74,188 @@ def _numerical_grad(self, data, weight_def, epsilon):
     return dw_error
 
 
-# Here's our "unit tests".
 class bpropTests(unittest.TestCase):
+    '''
+    Unit tests for checking the backpropogation of gradients through the model
+
+    Great way to check new layers. create the layer and check its grad prop
+    '''
 
     def testOne(self):
         '''
         neumerically approximate gradient and check network gradients
         were correctly computed
+
+        Check Softmax with shortcut
+        '''
+        # Extract data
+        ((X_train, Y_train), (_0, _1)) = load_mnist_data('dataset/mnist/')
+
+        # put data values \in [-1, 1]
+        [X_train] = _d_range([X_train])
+
+        t_train = one_hot(Y_train, m=10)
+
+        dataset = (X_train, t_train)
+
+        b_size = 1
+        # take out only a few samples for gradent check
+        X_check, Y_check = X_train[0:b_size], t_train[0:b_size]
+
+        Model._numerical_grad = _numerical_grad
+        Model.nu = 1e-3
+
+        # define model structure
+        layers = [Linear(out_shape=10, activation=Softmax(), bias=True,
+                         init='lecun_normal')]
+
+        # instantiate model
+        model = Model(layers, dataset, CrossEntropy(), class_task=True)
+
+        model.fit((X_check, Y_check), 3, verbose=False)
+
+        configs = [(0, False, (0, 0)),
+                   (0, False, (256, 9)),
+                   (0, True, (0)),
+                   (0, True, (4))]
+        eps = np.arange(.0001, .2, .0001)
+        dw_error = []
+        for config in configs:
+            dw_e = []
+            for ep in eps:
+                e = model._numerical_grad((X_check, Y_check),
+                                          config, ep)
+                dw_e += [e]
+            dw_error += [dw_e]
+
+        dw_error = np.array(dw_error)
+
+        self.assertTrue((dw_error < (eps**2)).all)
+
+    def testTwo(self):
+        '''
+        neumerically approximate gradient and check network gradients
+        were correctly computed
+
+        Check Logistic_Sigoid
+        '''
+        # Extract data
+        ((X_train, Y_train), (_0, _1)) = load_mnist_data('dataset/mnist/')
+
+        # put data values \in [-1, 1]
+        [X_train] = _d_range([X_train])
+
+        t_train = one_hot(Y_train, m=10)
+
+        dataset = (X_train, t_train)
+
+        b_size = 1
+        # take out only a few samples for gradent check
+        X_check, Y_check = X_train[0:b_size], t_train[0:b_size]
+
+        Model._numerical_grad = _numerical_grad
+        Model.nu = 1e-3
+
+        # define model structure
+        layers = [Linear(out_shape=64, activation=Logistic_Sigmoid(),
+                         bias=True, init='lecun_normal'),
+                  Linear(out_shape=10, activation=Softmax(), bias=True,
+                         init='lecun_normal')]
+
+        # instantiate model
+        model = Model(layers, dataset, CrossEntropy(), class_task=True)
+
+        model.fit((X_check, Y_check), 3, verbose=False)
+
+        configs = [(0, False, (0, 0)),
+                   (0, False, (60, 62)),
+                   (2, False, (0, 0)),
+                   (2, False, (4, 6)),
+                   (0, False, (10, 26)),
+                   (2, False, (7, 3)),
+                   (0, True, (0)),
+                   (0, True, (20)),
+                   (2, True, (0)),
+                   (2, True, (5))]
+        eps = np.arange(.0001, .2, .0001)
+        dw_error = []
+        for config in configs:
+            dw_e = []
+            for ep in eps:
+                e = model._numerical_grad((X_check, Y_check),
+                                          config, ep)
+                dw_e += [e]
+            dw_error += [dw_e]
+
+        dw_error = np.array(dw_error)
+
+        self.assertTrue((dw_error < (eps**2)).all)
+
+    def testThree(self):
+        '''
+        neumerically approximate gradient and check network gradients
+        were correctly computed
+
+        Check ReLU
+        '''
+        # Extract data
+        ((X_train, Y_train), (_0, _1)) = load_mnist_data('dataset/mnist/')
+
+        # put data values \in [-1, 1]
+        [X_train] = _d_range([X_train])
+
+        t_train = one_hot(Y_train, m=10)
+
+        dataset = (X_train, t_train)
+
+        b_size = 1
+        # take out only a few samples for gradent check
+        X_check, Y_check = X_train[0:b_size], t_train[0:b_size]
+
+        Model._numerical_grad = _numerical_grad
+        Model.nu = 1e-3
+
+        # define model structure
+        layers = [Linear(out_shape=64, activation=ReLU(),
+                         bias=True, init='lecun_normal'),
+                  Linear(out_shape=10, activation=Softmax(), bias=True,
+                         init='lecun_normal')]
+
+        # instantiate model
+        model = Model(layers, dataset, CrossEntropy(), class_task=True)
+
+        model.fit((X_check, Y_check), 3, verbose=False)
+
+        configs = [(0, False, (0, 0)),
+                   (0, False, (60, 62)),
+                   (2, False, (0, 0)),
+                   (2, False, (4, 6)),
+                   (0, False, (10, 26)),
+                   (2, False, (7, 3)),
+                   (0, True, (0)),
+                   (0, True, (20)),
+                   (2, True, (0)),
+                   (2, True, (5))]
+        eps = np.arange(.0001, .2, .0001)
+        dw_error = []
+        for config in configs:
+            dw_e = []
+            for ep in eps:
+                e = model._numerical_grad((X_check, Y_check),
+                                          config, ep)
+                dw_e += [e]
+            dw_error += [dw_e]
+
+        dw_error = np.array(dw_error)
+
+        self.assertTrue((dw_error < (eps**2)).all)
+
+    def testFour(self):
+        '''
+        neumerically approximate gradient and check network gradients
+        were correctly computed
+
+        Check ReLU and Logistic_Sigmoid in a deeper network
         '''
         # Extract data
         ((X_train, Y_train), (_0, _1)) = load_mnist_data('dataset/mnist/')
