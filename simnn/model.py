@@ -17,10 +17,12 @@ from simnn.utils import print_epochs
 class Model(object):
     """docstring for Model"""
 
-    def __init__(self, layers, dataset, cost, class_task=False, name='Model'):
+    def __init__(self, layers, dataset, cost,
+                 bin_class_task=False, class_task=False, name='Model'):
         self.name = name
         # define if this is a classification task
         self.class_task = class_task
+        self.bin_class_task = bin_class_task
 
         # extract dataset
         x, t = dataset
@@ -97,8 +99,14 @@ class Model(object):
 
         return np.sum(t_c != y_c) / len(t_c)
 
+    def _error_rate_bin(self, t, y):
+        return np.sum(t != np.round(y)) / len(t)
+
     def _accuracy_rate(self, t, y):
         return 1 - self._error_rate(t, y)
+
+    def _accuracy_rate_bin(self, t, y):
+        return 1 - self._error_rate_bin(t, y)
 
     def _check_data(self, X, Y):
         assert isinstance(X, np.ndarray), 'Input must be a numpy array'
@@ -164,8 +172,12 @@ class Model(object):
         y = self.net_fprop(self.X)
         # get accuracy for training data
         if self.class_task:
-            acc = self._accuracy_rate(self.target, y)
-            self.acc_e += [acc]  # store over time
+            if self.bin_class_task:
+                acc = self._accuracy_rate_bin(self.target, y)
+                self.acc_e += [acc]  # store over time
+            else:
+                acc = self._accuracy_rate(self.target, y)
+                self.acc_e += [acc]  # store over time
         cost = self.cost.fprop(self.target, y)
         self.cost_e += [cost]
 
@@ -173,8 +185,12 @@ class Model(object):
             y = self.net_fprop(self.X_val)
             # get accuracy for validation data
             if self.class_task:
-                v_acc = self._accuracy_rate(self.target_val, y)
-                self.v_acc_e += [v_acc]  # store over time
+                if self.bin_class_task:
+                    v_acc = self._accuracy_rate_bin(self.target_val, y)
+                    self.v_acc_e += [v_acc]  # store over time
+                else:
+                    v_acc = self._accuracy_rate(self.target_val, y)
+                    self.v_acc_e += [v_acc]  # store over time
             v_cost = self.cost.fprop(self.target_val, y)
             self.v_cost_e += [v_cost]
 
