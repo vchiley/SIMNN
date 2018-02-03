@@ -40,7 +40,7 @@ To instantiate Neural Network Model and fit to data:
 	from simnn import Model, CrossEntropy
 
 	model = Model(layers, dataset, CrossEntropy())
-
+    # fit model to datas
     model.fit(dataset, num_epochs=num_epochs, b_size=128, verbose=verbose)
 ```
 
