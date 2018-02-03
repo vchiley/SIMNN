@@ -2,7 +2,11 @@
 
 In an dual effort, Zoe and I have created the following Deep Learning architectuer to classify oil spills on the ocean floor.
 
-## Final Network Description
+## Network Performance
+The network is set to run for a maximum of 128 but will early stop enabled, stopping the network once it has converged.
+The network achieves 90%+ performance within the first epoch and eventually converges to about 97%+ on the validation and test sets
+
+## Network Description
 
 Our final had the following layer definitions:
 ```python
@@ -13,7 +17,13 @@ layers = [Linear(out_shape=nh, activation=ReLU(), init='lecun_normal'),
           Linear(out_shape=10, activation=Softmax(), init='lecun_normal')]
 ```
 
-Note: the `PM_BN` layer is what we call a 'Poor Mans Batch Normalization' layer. It mean centers the data like Batch Normalization but does not perform a complete z-score. The architecture with `PM_BN` was used because of its ability to converge faster and better on smaller networks. Having a large hidden layer a network without `PM_BN` yeilds comprable results as having the layer.
+### PM_BN
+
+The `PM_BN` layer is what we call a 'Poor Mans Batch Normalization' layer. It mean centers the data like Batch Normalization but does not perform a complete z-score of the batch like Convensoinal Batch Normalization. The architecture with `PM_BN` was used because of its ability to converge faster and its better performance with smaller network architectures. Having a large hidden layer a network without `PM_BN` yeilds comprable results as a network which has the layer.
+
+### Network Parameters
+
+The Network has 784 x 64 + 64 parameters in the first layer, 64 parameters in the PM_BN layer, and 64 x 10 + 10 in the last layer. This is a total of 784 x 64 + 64 + 64 + 64 x 10 + 10 = 50954 tunnable parameters which meets early stops conditions in about 50 epochs, but usually converges to accuracies of 97% on the val set within 25 epochs.
 
 ## Result Replication 
 The results can be replicated using: `mnist_mlp_PM_BN.py`
