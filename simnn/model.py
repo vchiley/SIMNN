@@ -6,6 +6,7 @@ __author__ = 'Vitaliy Chiley'
 __date__ = '01/2018'
 
 import time
+import warnings
 import numpy as np
 from numbers import Number
 
@@ -15,7 +16,22 @@ from simnn.utils import print_epochs
 
 
 class Model(object):
-    """docstring for Model"""
+    '''
+    Neural Network Model
+
+    :param layers: list of layers for the model
+    :type layers: list
+    :param dataset: training examples and labels
+    :type dataset: tuple
+    :param cost: cost of network
+    :type cost: Cost
+    :param class_task: defines if this is a classification task
+    :type class_task: bool
+    :param bin_class_task: defines if this is a binary classification task
+    :type bin_class_task: bool
+    :param name: give model a name
+    :type name: str
+    '''
 
     def __init__(self, layers, dataset, cost,
                  bin_class_task=False, class_task=False, name='Model'):
@@ -78,6 +94,11 @@ class Model(object):
         return rep_str
 
     def _init_stat_holders(self):
+        '''
+        initialize containers to hold trainig statistics
+
+        called durring model initialization
+        '''
         # for entire epoch
         self.acc_e, self.v_acc_e = [], []  # accuracies
         self.cost_e, self.v_cost_e = [], []  # costs
@@ -87,6 +108,11 @@ class Model(object):
         self.cost_i = []  # costs
 
     def _set_shortcut(self):
+        '''
+        set shortcut for network cost / final layer options
+
+        called durring model initialization
+        '''
         if isinstance(self.cost, CrossEntropy):
             if isinstance(self.layers[-1], Softmax):
                 self.layers[-1].shortcut = True
@@ -98,6 +124,12 @@ class Model(object):
     def _early_stop_acc(self, metric, eps, n):
         '''
         if metric doesnt improve, stop the network
+        error rate for one hot label classification
+
+        :param metric: network metric, usually cost, must be decreasing
+        :type metric: np.ndarray, list
+        :param eps: epsilon for early stopping
+        :type eps: Number
         '''
         dif = np.array(metric[-(n + 1):-1]) - np.array(metric[-n:])
         if all(dif <= -eps):
@@ -106,38 +138,95 @@ class Model(object):
             self.early_stop = False
 
     def _error_rate(self, t, y):
+        '''
+        error rate for one hot label classification
+
+        :param t: target labels
+        :type t: np.ndarray
+        :param y: network output
+        :type y: np.ndarray
+        '''
         t_c = t.argmax(axis=1)
         y_c = y.argmax(axis=1)
 
         return np.sum(t_c != y_c) / len(t_c)
 
     def _error_rate_bin(self, t, y):
+        '''
+        error rate for binary classification
+
+        :param t: target labels
+        :type t: np.ndarray
+        :param y: network output
+        :type y: np.ndarray
+        '''
         return np.sum(t != np.round(y)) / len(t)
 
     def _accuracy_rate(self, t, y):
+        '''
+        accuracy rate for one hot label classification
+
+        :param t: target labels
+        :type t: np.ndarray
+        :param y: network output
+        :type y: np.ndarray
+        '''
         return 1 - self._error_rate(t, y)
 
     def _accuracy_rate_bin(self, t, y):
+        '''
+        accuracy rate for binary classification
+
+        :param t: target labels
+        :type t: np.ndarray
+        :param y: network output
+        :type y: np.ndarray
+        '''
         return 1 - self._error_rate_bin(t, y)
 
     def _check_data(self, X, Y):
+        '''
+        check data data passed to the network
+
+        :param X: training examples
+        :type X: np.ndarray
+        :param Y: labels for training data
+        :type Y: np.ndarray
+        '''
         assert isinstance(X, np.ndarray), 'Input must be a numpy array'
         assert isinstance(Y, np.ndarray), 'Input must be a numpy array'
         assert len(X) == len(Y), 'each example in X must have a label'
 
-    def _learn_anneal(self, t):
-        self.nu = self.initial_learn / (1 + t / self.T)
+    def _learn_anneal(self, ep):
+        '''
+        Anneals the learning rate
+
+        :param ep: all the indicies of the dataset
+        :type ep: np.ndarray
+        '''
+        self.nu = self.initial_learn / (1 + ep / self.T)
 
     def _b_idx_gen(self, all_idx, b_size):
         '''
         Yield successive b_size-sized chunks from all_idxs
-        adopted from:
+        adopted / modification of:
         https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
+
+        :param all_idx: all the indicies of the dataset
+        :type all_idx: np.ndarray
+        :param b_size: batchsize to break up the idx into
+        :type b_size: int
         '''
         for i in range(0, len(all_idx), b_size):
             yield all_idx[i:i + b_size]
 
     def _ep_fit(self, verbose):
+        '''
+        fit the network for one epoch network
+
+        :param verbose: print out training stats for epoch or not
+        :type verbose: bool
+        '''
         assert -1 <= self.b_size <= len(self.X), 'b_size out of range'
         if self.b_size == -1:
             # get all the trainset indecies
@@ -168,19 +257,39 @@ class Model(object):
                 self.net_bprop(t, y)
 
     def net_fprop(self, x):
-        # forward pass through the network
+        '''
+        fprop throught the network
+
+        :param x: training examples / network inputs
+        :type x: np.ndarray
+        '''
         self.layers[0].fprop(x)
         for layer in self.layers[1:]:
             layer.fprop(layer.prev_layer.y)
         return self.layers[-1].y
 
     def net_bprop(self, target, y):
-        # backwards pass with errors
+        '''
+        bprop throught the network and optimize parameters
+
+        :param target: training targets
+        :type target: np.ndarray
+        :param y: network output from net_fprop
+        :type y: np.ndarray
+        '''
         error = self.cost.bprop(target, y)
         for layer in self.layers[::-1]:
             error = layer.bprop(error, self.nu)
 
     def _epoch_stats(self, ep, verbose=0):
+        '''
+        capture statistics of epoch
+
+        :param ep: epoch number
+        :type ep: tuple
+        :param verbose: print epoch statistics or not
+        :type verbose: bool
+        '''
         y = self.net_fprop(self.X)
         # get accuracy for training data
         if self.class_task:
@@ -221,7 +330,35 @@ class Model(object):
 
     def fit(self, dataset, num_epochs, val_set=None, initial_learn=1e-3,
             aneal_T=30, shuffle=True, b_size=-1, verbose=True,
-            early_stop_eps=1e-32, min_epochs=10, e_stop_n=3, e_stop=False):
+            e_stop=False, e_stop_n=3, early_stop_eps=1e-32, min_epochs=1):
+        '''
+        fit the Neural Network Model to the dataset for a number of epochs.
+
+        :param dataset: training examples and labels
+        :type dataset: tuple
+        :param num_epochs: number of epochs to train the network
+        :type num_epochs: int
+        :param val_set: validation set examples and labels
+        :type val_set: tuple
+        :param initial_learn: initial learning rate
+        :type initial_learn: Number
+        :param aneal_T: anealing parameter
+        :type aneal_T: int
+        :param shuffle: shuffle data after each epoch
+        :type shuffle: bool
+        :param b_size: batchsize over which to train, -1 = full batch training
+        :type b_size: int
+        :param verbose: print training informations or not
+        :type verbose: bool
+        :param e_stop: stop network if cost has converged
+        :type e_stop: bool
+        :param e_stop_n: number of epochs over which to see convergence
+        :type e_stop_n: int
+        :param early_stop_eps: early stop parameter
+        :type early_stop_eps: Number
+        :param min_epochs: min number of epochs to train before early stop
+        :type min_epochs: int
+        '''
         self.X, self.target = dataset
         self._check_data(self.X, self.target)
 

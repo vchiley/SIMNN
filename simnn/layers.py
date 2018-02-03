@@ -6,12 +6,27 @@ __author__ = 'Vitaliy Chiley'
 __date__ = '01/2018'
 
 import numpy as np
-import warnings
 
 from simnn.initializer import initializer
 
 
 class Layer(object):
+    '''
+    Base Layer object
+
+    :param out_shape: output shape
+    :type out_shape: int
+    :param activation: activation type
+    :type activation: Activation
+    :param bias: boolian defining bias inclusion
+    :type bias: bool
+    :param in_shape: define input data shape
+    :type in_shape: int
+    :param init: parameter initialization method, std.dev. or norm or method
+    :type init: str, Number
+    :param name: layer name
+    :type name: str
+    '''
 
     def __init__(self, out_shape, activation=None, bias=False,
                  in_shape=None, init=.1, name='Layer'):
@@ -24,7 +39,7 @@ class Layer(object):
         self.activation = activation
         self.bias = bias
         self.init = init
-        self.in_shape = None
+        self.in_shape = in_shape
         self.x = None
         self.next_layer = None
         self.prev_layer = None
@@ -42,18 +57,37 @@ class Layer(object):
         return rep_str
 
     def config(self):
+        '''
+        configure layer
+        '''
         # get inshape from previous layer
         if self.in_shape is None:
             self.in_shape = self.prev_layer.out_shape
 
     def allocate(self):
         '''
-        allocate parameters of model
+        allocate parameters of layer
         '''
         pass
 
 
 class Linear(Layer):
+    '''
+    Linear (actually Affine) Layer object
+
+    :param out_shape: output shape
+    :type out_shape: int
+    :param activation: activation type
+    :type activation: Activation
+    :param bias: boolian defining bias inclusion
+    :type bias: bool
+    :param in_shape: define input data shape
+    :type in_shape: int
+    :param init: parameter initialization method, std.dev. or norm or method
+    :type init: str, Number
+    :param name: layer name
+    :type name: str
+    '''
 
     def __init__(self, out_shape, activation=None, bias=True,
                  in_shape=None, init=.1, name='Linear Layer'):
@@ -63,10 +97,18 @@ class Linear(Layer):
                                      name='Linear Layer')
 
     def allocate(self):
-        # allocate parameters of layer
+        '''
+        allocate layer parameters
+        '''
         self.W, self.b = initializer(self)
 
     def fprop(self, x):
+        '''
+        fprop through the layer
+
+        :param x: layer input
+        :type x: np.ndarray
+        '''
         self.x = x.copy()
 
         self.y = self.x.dot(self.W)
@@ -77,6 +119,14 @@ class Linear(Layer):
         return self.y
 
     def bprop(self, p_deltas, alpha):
+        '''
+        bprop through the layer
+
+        :param p_deltas: propogating errors coming back
+        :type p_deltas: np.ndarray
+        :param alpha: learning rate
+        :type alpha: Number
+        '''
         # create layers deltas i.e. transform deltas using linear layer
         self.deltas = p_deltas.dot(self.W.T)
 
@@ -87,6 +137,14 @@ class Linear(Layer):
         return self.deltas
 
     def _param_update(self, p_deltas, alpha):
+        '''
+        update layer parametres based on p_deltas
+
+        :param p_deltas: propogating errors coming back
+        :type p_deltas: np.ndarray
+        :param alpha: learning rate
+        :type alpha: Number
+        '''
         # compute Gradient
         self.d_W = self.x.T.dot(p_deltas)  # create weight gradient
         self.d_b = np.sum(p_deltas, axis=0)  # create bias gradient
@@ -102,29 +160,43 @@ class PM_BN(Layer):
     '''
     "Poor Man Batch Normilization Layer" only mean centers the data
     does not actually z-score the batch
+
+    :param out_shape: output shape
+    :type out_shape: int
+    :param activation: activation type
+    :type activation: activation
+    :param bias: boolian defining bias inclusion, this layer is dependent on it
+    :type bias: bool
+    :param in_shape: define input data shape
+    :type in_shape: int
+    :param init: parameter initialization method, std.dev. or norm or method
+    :type init: str, Number
+    :param name: layer name
+    :type name: str
     '''
 
-    def __init__(self, out_shape, activation=None, bias=True,
-                 in_shape=None, init=.1, name='Linear Layer'):
+    def __init__(self, out_shape, init=.1, name='PM_BN Layer'):
 
-        super(PM_BN, self).__init__(out_shape, activation=activation,
-                                    bias=True, in_shape=in_shape, init=init,
+        super(PM_BN, self).__init__(out_shape, in_shape=out_shape, init=init,
                                     name='PM_BN')
-
-        self.in_shape = out_shape
-
-        if bias is False:
-            warnings.warn('Layer assumes a bias, Bias=False overridden')
 
     def __repr__(self):
         rep_str = '{}\n'.format(self.name)
         return rep_str
 
     def allocate(self):
-        # allocate parameters of layer
+        '''
+        allocate layer parameters
+        '''
         _, self.b = initializer(self)
 
     def fprop(self, x):
+        '''
+        fprop through the layer
+
+        :param x: layer input
+        :type x: np.ndarray
+        '''
         self.x = x.copy()
 
         self.y = self.x - np.mean(self.x, axis=0)
@@ -134,6 +206,14 @@ class PM_BN(Layer):
         return self.y
 
     def bprop(self, p_deltas, alpha):
+        '''
+        bprop through the layer
+
+        :param p_deltas: propogating errors coming back
+        :type p_deltas: np.ndarray
+        :param alpha: learning rate
+        :type alpha: Number
+        '''
         # create layers deltas i.e. transform deltas using linear layer
         self.deltas = p_deltas
 
@@ -144,6 +224,14 @@ class PM_BN(Layer):
         return self.deltas
 
     def _param_update(self, p_deltas, alpha):
+        '''
+        update layer parametres based on p_deltas
+
+        :param p_deltas: propogating errors coming back
+        :type p_deltas: np.ndarray
+        :param alpha: learning rate
+        :type alpha: Number
+        '''
         # compute Gradient
         self.d_b = np.sum(p_deltas, axis=0)  # create bias gradient
 

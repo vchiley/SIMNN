@@ -8,10 +8,40 @@ __date__ = '01/2018'
 import numpy as np
 
 
-class CrossEntropy(object):
-    def __init__(self, name='CrossEntropyCost', ep_clip=1e-64):
+class Cost(object):
+    '''
+    Base Cost Class
+
+    :param name: layer name
+    :type name: str
+    '''
+
+    def __init__(self, name):
         assert isinstance(name, str), 'Name must be of type string'
+        # super(Cost, self).__init__()
         self.name = name
+
+    def fprop(self, t, y):
+        pass
+
+    def bprop(self, t, y):
+        pass
+
+
+class CrossEntropy(Cost):
+    '''
+    Cross Entropy Cost
+
+    Should have softmax as network output activation
+
+    :param name: layer name
+    :type name: str
+    :param ep_clip: Clip output values so log(0) dosent occure
+    :type ep_clip: Number
+    '''
+
+    def __init__(self, name='CrossEntropyCost', ep_clip=1e-64):
+        super(CrossEntropy, self).__init__(name)
         self.ep_clip = ep_clip
 
     def __repr__(self):
@@ -19,6 +49,14 @@ class CrossEntropy(object):
         return rep_str
 
     def fprop(self, t, y):
+        '''
+        Computes the cost
+
+        :param t: network targets
+        :type t: np.ndarray
+        :param y: network outputs
+        :type y: np.ndarray
+        '''
         assert isinstance(t, np.ndarray)
         assert isinstance(y, np.ndarray)
         assert y.shape == t.shape
@@ -32,15 +70,31 @@ class CrossEntropy(object):
 
     def bprop(self, t, y):
         '''
-        Uses shortcut, assumes previous layer is softmax layer
+        Creates deltas for bprop
+        Uses shortcut, assumes previous layer has softmax activation
+
+        :param t: network targets
+        :type t: np.ndarray
+        :param y: network outputs
+        :type y: np.ndarray
         '''
         return y - t
 
 
-class BinaryCrossEntropy(object):
+class BinaryCrossEntropy(Cost):
+    '''
+    Binary Cross Entropy Cost
+
+    Should have logistic sigmoid as network output activation
+
+    :param name: layer name
+    :type name: str
+    :param ep_clip: Clip output values so log(0) dosent occure
+    :type ep_clip: Number
+    '''
+
     def __init__(self, name='BinaryCrossEntropy', ep_clip=1e-64):
-        assert isinstance(name, str), 'Name must be of type string'
-        self.name = name
+        super(BinaryCrossEntropy, self).__init__(name)
         self.ep_clip = ep_clip
 
     def __repr__(self):
@@ -48,6 +102,14 @@ class BinaryCrossEntropy(object):
         return rep_str
 
     def fprop(self, t, y):
+        '''
+        Computes the cost
+
+        :param t: network targets
+        :type t: np.ndarray
+        :param y: network outputs
+        :type y: np.ndarray
+        '''
         assert isinstance(t, np.ndarray)
         assert isinstance(y, np.ndarray)
         assert y.shape == t.shape
@@ -61,6 +123,12 @@ class BinaryCrossEntropy(object):
 
     def bprop(self, t, y):
         '''
-        Uses shortcut, assumes previous layer is logistic sigmoid layer
+        Creates deltas for bprop
+        Uses shortcut, assumes previous layer has logistic sigmoid activation
+
+        :param t: network targets
+        :type t: np.ndarray
+        :param y: network outputs
+        :type y: np.ndarray
         '''
         return y - t

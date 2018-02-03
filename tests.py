@@ -28,6 +28,13 @@ def _numerical_grad(self, data, weight_def, epsilon):
     error larger. If running tests with numerical grad checker, sometimes it
     will fail because initializations of the networks are random and
     probabilistically test failure occures, but rarely
+
+    :param data: training example and label, one training example
+    :type data: tuple
+    :param weight_def: tuple describing weight to check: (layer, bias, idx)
+    :type weight_def: tuple
+    :param epsilon: epsilon for numerical gradient approximation
+    :type epsilon: Number
     '''
     x, t = data
     assert len(t) == 1
@@ -78,7 +85,7 @@ class bpropTests(unittest.TestCase):
     '''
     Unit tests for checking the backpropogation of gradients through the model
 
-    Great way to check new layers. create the layer and check its grad prop
+    Great way to check new layers. Create the layer and check its grad prop
     '''
 
     def testOne(self):

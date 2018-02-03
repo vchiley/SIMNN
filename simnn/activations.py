@@ -5,20 +5,99 @@ Impliments activation functions for SIMNN
 __author__ = 'Vitaliy Chiley'
 __date__ = '01/2018'
 
-import numpy as np
 import warnings
+import numpy as np
 
 from numbers import Number
 
 from simnn.layers import Layer
 
 
-class Logistic_Sigmoid(Layer):
+class Activation(Layer):
+    '''
+    Base class for Activation objects
+
+    :param out_shape: output shape
+    :type out_shape: int
+    :param in_shape: define input data shape
+    :type in_shape: int
+    :param name: layer name
+    :type name: str
+    '''
+
+    def __init__(self, out_shape, in_shape, name):
+        super(Activation, self).__init__(out_shape=out_shape,
+                                         in_shape=out_shape, name=name)
+
+
+class ReLU(Activation):
+    '''
+    Rectifid Linear Unit Activation
+
+    :param name: layer name
+    :type name: str
+    '''
+
+    def __init__(self, name='ReLU'):
+
+        super(ReLU, self).__init__(out_shape=None, in_shape=None,
+                                   name=name)
+        self.use_y = True
+
+    def __repr__(self):
+        rep_str = '{}\n'.format(self.name)
+        return rep_str
+
+    def fprop(self, x):
+        '''
+        fprop through the activation
+
+        :param x: layer input
+        :type x: np.ndarray
+        '''
+        assert isinstance(x, np.ndarray), 'must be a numpy vector'
+        self.x = x.copy()
+
+        self.y = x.copy()
+        self.y[np.where(self.y < 0)] = 0
+
+        return self.y
+
+    def bprop(self, p_deltas, alpha, use_y=False):
+        '''
+        bprop through the activation
+
+        :param p_deltas: propogating errors coming back
+        :type p_deltas: np.ndarray
+        :param alpha: learning rate
+        :type alpha: Number
+        :param use_y: defines if layer out should be used to get bprop
+        :type use_y: bool
+        '''
+        if self.use_y:
+            return np.sign(self.y).astype(np.float) * p_deltas
+
+        x = self.x.copy()
+
+        x[np.where(x < 0)] = 0
+
+        return np.sign(x).astype(np.float) * p_deltas
+
+
+class Logistic_Sigmoid(Activation):
+    '''
+    Logistic Sigmoid Activation
+
+    Should be the last layer of a network with binary cross entropy coss
+
+    :param name: layer name
+    :type name: str
+    '''
+
     def __init__(self, name='Sigmoid'):
 
-        super(Logistic_Sigmoid, self).__init__(out_shape=None, activation=None,
-                                               bias=None, in_shape=None,
-                                               init=None, name=name)
+        super(Logistic_Sigmoid, self).__init__(out_shape=None, in_shape=None,
+                                               name=name)
 
         self.shortcut = False
         self.use_y = True
@@ -35,10 +114,10 @@ class Logistic_Sigmoid(Layer):
 
     def fprop(self, x):
         '''
-        sigmoid function implimentation
+        fprop through the activation
 
-        :param: x - vector on which to perform sigmoid
-        :type: np.ndarray
+        :param x: layer input
+        :type x: np.ndarray
         '''
         self.x = x.copy()
 
@@ -47,7 +126,17 @@ class Logistic_Sigmoid(Layer):
         return self.y
 
     def bprop(self, p_deltas, alpha, use_y=None):
-        # if this is last layers activation with bin-cross_entropy loss
+        '''
+        bprop through the activation
+
+        :param p_deltas: propogating errors coming back
+        :type p_deltas: np.ndarray
+        :param alpha: learning rate
+        :type alpha: Number
+        :param use_y: defines if layer out should be used to get bprop
+        :type use_y: bool
+        '''
+        # if this is last layers activation with bin_cross_entropy loss
         if self.shortcut:
             return 1 * p_deltas
 
@@ -57,11 +146,19 @@ class Logistic_Sigmoid(Layer):
         return self._fprop(self.x) * self._fprop(-self.x) * p_deltas
 
 
-class Softmax(Layer):
+class Softmax(Activation):
+    '''
+    Softmax Activation
+
+    Should be the last layer of a network with cross entropy coss
+
+    :param name: layer name
+    :type name: str
+    '''
+
     def __init__(self, name='Softmax', n_stable=True):
 
-        super(Softmax, self).__init__(out_shape=None, activation=None,
-                                      bias=None, in_shape=None, init=None,
+        super(Softmax, self).__init__(out_shape=None, in_shape=None,
                                       name=name)
         self.n_stable = n_stable
         self.shortcut = False
@@ -86,10 +183,12 @@ class Softmax(Layer):
 
     def fprop(self, x):
         '''
-        Neumerically stable softmax of the vector x
+        fprop through the activation
 
-        :param: x - vector on which to perform softmax
-        :type: np.ndarray
+        Neumerically stable softmax function
+
+        :param x: layer input
+        :type x: np.ndarray
         '''
         assert isinstance(x, np.ndarray), 'must be a numpy vector'
 
@@ -100,6 +199,16 @@ class Softmax(Layer):
         return self.y
 
     def bprop(self, p_deltas, alpha, use_y=False):
+        '''
+        bprop through the activation
+
+        :param p_deltas: propogating errors coming back
+        :type p_deltas: np.ndarray
+        :param alpha: learning rate
+        :type alpha: Number
+        :param use_y: defines if layer out should be used to get bprop
+        :type use_y: bool
+        '''
         if self.shortcut:
             return 1 * p_deltas
         if self.use_y:  # use y to compute dir, faster calculation
@@ -108,47 +217,10 @@ class Softmax(Layer):
         return self._fprop(self.x) * self._fprop(-self.x) * p_deltas
 
 
-class ReLU(Layer):
-    def __init__(self, name='ReLU'):
-
-        super(ReLU, self).__init__(out_shape=None, activation=None,
-                                   bias=None, in_shape=None, init=None,
-                                   name=name)
-        self.use_y = True
-
-    def __repr__(self):
-        rep_str = '{}\n'.format(self.name)
-        return rep_str
-
-    def fprop(self, x):
-        '''
-        :param: x
-        :type: np.ndarray
-        '''
-        assert isinstance(x, np.ndarray), 'must be a numpy vector'
-        self.x = x.copy()
-
-        self.y = x.copy()
-        self.y[np.where(self.y < 0)] = 0
-
-        return self.y
-
-    def bprop(self, p_deltas, alpha, use_y=False):
-        if self.use_y:
-            return np.sign(self.y).astype(np.float) * p_deltas
-
-        x = self.x.copy()
-
-        x[np.where(x < 0)] = 0
-
-        return np.sign(x).astype(np.float) * p_deltas
-
-
-class Line(Layer):
+class Line(Activation):
     def __init__(self, a=1, b=0, name='Line'):
 
-        super(Line, self).__init__(out_shape=None, activation=None,
-                                   bias=None, in_shape=None, init=None,
+        super(Line, self).__init__(out_shape=None, in_shape=None,
                                    name=name)
 
         assert isinstance(a, Number), 'a must be a Number'
@@ -179,7 +251,7 @@ class Line(Layer):
         return self.a * p_deltas
 
 
-class Identity(Line):
+class Identity(Activation):
     def __init__(self, name='Identity'):
         super(Identity, self).__init__(name=name)
         warnings.warn('Identity is not a non-linearity', UserWarning)
