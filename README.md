@@ -48,10 +48,7 @@ model.fit(dataset, num_epochs=num_epochs, b_size=128, verbose=verbose)
 
 Other parameters can be passed into the network as well
 
-Usage exampels in Jupyter Notebooks (all using the mnist dataset) can be seen in: 1. `logistic_regression_3_and_5_mnist.ipynb` 2. `mnist_mlp.ipynb`, 3. `mnist_mlp_dev.ipynb`
-
-A usage example in a python script can be seen in: `mnist_mlp_PM_BN.py`
-To run example: `python mnist_mlp_PM_BN.py --verbose --mnist_dir /path_to/mnist_dataset/`
+Usage exampels in Jupyter Notebooks (all using the mnist dataset) can be seen in: 1. `logistic_regression_3_and_5_mnist.ipynb` 2. `mnist_mlp.ipynb`
 
 # Network Testing
 To test the network run `python tests.py`.
