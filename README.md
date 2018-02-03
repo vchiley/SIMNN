@@ -30,6 +30,7 @@ To instantiate a network, you must first define a list of layer objects for the 
 from simnn import Linear
 from simnn import ReLU, Softmax
 
+# Define network structure
 layers = [Linear(out_shape=64, activation=ReLU(), init='lecun_normal'),
           Linear(out_shape=10, activation=Softmax(), init='lecun_normal')]
 ```
@@ -40,6 +41,7 @@ To instantiate Neural Network Model and fit to data:
 from simnn import Model, CrossEntropy
 
 model = Model(layers, dataset, CrossEntropy())
+
 # fit model to datas
 model.fit(dataset, num_epochs=num_epochs, b_size=128, verbose=verbose)
 ```
