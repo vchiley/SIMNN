@@ -30,10 +30,8 @@ To instantiate a network, you must first define a list of layer objects for the 
 	from simnn import Linear
 	from simnn import ReLU, Softmax
 
-	layers = [Linear(out_shape=nh, activation=ReLU(), bias=True,
-                     init='lecun_normal'),
-              Linear(out_shape=10, activation=Softmax(), bias=True,
-                     init='lecun_normal')]
+	layers = [Linear(out_shape=64, activation=ReLU(), init='lecun_normal'),
+              Linear(out_shape=10, activation=Softmax(), init='lecun_normal')]
 ```
 
 To instantiate Neural Network Model and fit to data:
