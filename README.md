@@ -27,6 +27,7 @@ SIMNN has implemented:
 To instantiate a network, you must first define a list of layer objects for the network architecture:
 
 '''
+
 	from simnn import Linear
 	from simnn import ReLU, Softmax
 
@@ -39,6 +40,7 @@ To instantiate a network, you must first define a list of layer objects for the 
 To instantiate Neural Network Model and fit to data:
 
 '''
+
 	from simnn import Model, CrossEntropy
 
 	model = Model(layers, dataset, CrossEntropy())
