@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 
 from simnn import Model
-from simnn import Linear
+from simnn import Linear, PM_BN
 from simnn import ReLU, Softmax, Logistic_Sigmoid
 from simnn import CrossEntropy
 from simnn import one_hot
@@ -37,14 +37,13 @@ def _numerical_grad(self, data, weight_def, epsilon):
     :type epsilon: Number
     '''
     x, t = data
-    assert len(t) == 1
+    assert len(t) == len(x)
     assert isinstance(weight_def, tuple), 'weight_def is tuple description'
     assert len(weight_def) == 3, '(in or hid, bias or not, (idx in array))'
 
     # unpack input directing us to the input
     layer, bias, idx = weight_def
     assert isinstance(bias, bool)
-    assert not layer % 2, 'layer must have params, not just be an activation'
 
     if bias:
         w = self.layers[layer].b
@@ -62,7 +61,7 @@ def _numerical_grad(self, data, weight_def, epsilon):
     c_n = self.cost.fprop(t, y)
 
     # find numerical approximation of gradient
-    dw_n = (c_p - c_n) / (2 * epsilon)
+    dw_n = (c_p - c_n) / (2 * epsilon) * len(x)
 
     # reset weight
     w[idx] += epsilon
@@ -86,14 +85,18 @@ class bpropTests(unittest.TestCase):
     Unit tests for checking the backpropogation of gradients through the model
 
     Great way to check new layers. Create the layer and check its grad prop
+
+    Note: because the models are set up with random initializers the results
+    can sometimes be missleading. Run the tests a few times.
+    Figure out a way to stabilize tests
     '''
 
-    def testOne(self):
+    def test_PM_BN(self):
         '''
         neumerically approximate gradient and check network gradients
         were correctly computed
 
-        Check Softmax with shortcut
+        Check PM_BN
         '''
         # Extract data
         ((X_train, Y_train), (_0, _1)) = load_mnist_data('dataset/mnist/')
@@ -105,26 +108,36 @@ class bpropTests(unittest.TestCase):
 
         dataset = (X_train, t_train)
 
-        b_size = 1
+        b_size = 16
         # take out only a few samples for gradent check
         X_check, Y_check = X_train[0:b_size], t_train[0:b_size]
 
         Model._numerical_grad = _numerical_grad
         Model.nu = 1e-3
 
+        nh = 64
         # define model structure
-        layers = [Linear(out_shape=10, activation=Softmax(), bias=True,
+        layers = [Linear(out_shape=nh, activation=Logistic_Sigmoid(),
+                         bias=True, init='lecun_normal'),
+                  PM_BN(nh),
+                  Linear(out_shape=10, activation=Softmax(), bias=True,
                          init='lecun_normal')]
 
         # instantiate model
         model = Model(layers, dataset, CrossEntropy(), class_task=True)
 
-        model.fit((X_check, Y_check), 3, verbose=False)
+        model.fit((X_check, Y_check), 4, verbose=False)
 
         configs = [(0, False, (0, 0)),
-                   (0, False, (256, 9)),
+                   (0, False, (60, 62)),
+                   (3, False, (0, 0)),
+                   (3, False, (4, 6)),
+                   (0, False, (10, 26)),
+                   (3, False, (7, 3)),
                    (0, True, (0)),
-                   (0, True, (4))]
+                   (0, True, (20)),
+                   (3, True, (0)),
+                   (3, True, (5))]
         eps = np.arange(.0001, .2, .0001)
         dw_error = []
         for config in configs:
@@ -137,14 +150,14 @@ class bpropTests(unittest.TestCase):
 
         dw_error = np.array(dw_error)
 
-        self.assertTrue((dw_error < (eps**2)).all)
+        self.assertEqual((dw_error < (eps**2)).all(), True)
 
-    def testTwo(self):
+    def test_Larger_Net(self):
         '''
         neumerically approximate gradient and check network gradients
         were correctly computed
 
-        Check Logistic_Sigoid
+        Check ReLU and Logistic_Sigmoid in a deeper network
         '''
         # Extract data
         ((X_train, Y_train), (_0, _1)) = load_mnist_data('dataset/mnist/')
@@ -156,7 +169,7 @@ class bpropTests(unittest.TestCase):
 
         dataset = (X_train, t_train)
 
-        b_size = 1
+        b_size = 2
         # take out only a few samples for gradent check
         X_check, Y_check = X_train[0:b_size], t_train[0:b_size]
 
@@ -164,7 +177,9 @@ class bpropTests(unittest.TestCase):
         Model.nu = 1e-3
 
         # define model structure
-        layers = [Linear(out_shape=64, activation=Logistic_Sigmoid(),
+        layers = [Linear(out_shape=32, activation=Logistic_Sigmoid(),
+                         bias=True, init='lecun_normal'),
+                  Linear(out_shape=32, activation=Logistic_Sigmoid(),
                          bias=True, init='lecun_normal'),
                   Linear(out_shape=10, activation=Softmax(), bias=True,
                          init='lecun_normal')]
@@ -172,18 +187,22 @@ class bpropTests(unittest.TestCase):
         # instantiate model
         model = Model(layers, dataset, CrossEntropy(), class_task=True)
 
-        model.fit((X_check, Y_check), 3, verbose=False)
+        model.fit((X_check, Y_check), 4, verbose=False)
 
         configs = [(0, False, (0, 0)),
-                   (0, False, (60, 62)),
+                   (0, False, (14, 30)),
                    (2, False, (0, 0)),
                    (2, False, (4, 6)),
                    (0, False, (10, 26)),
-                   (2, False, (7, 3)),
+                   (2, False, (7, 31)),
                    (0, True, (0)),
                    (0, True, (20)),
                    (2, True, (0)),
-                   (2, True, (5))]
+                   (2, True, (5)),
+                   (4, False, (0, 0)),
+                   (4, False, (9, 4)),
+                   (4, True, (0)),
+                   (4, True, (8))]
         eps = np.arange(.0001, .2, .0001)
         dw_error = []
         for config in configs:
@@ -196,9 +215,9 @@ class bpropTests(unittest.TestCase):
 
         dw_error = np.array(dw_error)
 
-        self.assertTrue((dw_error < (eps**2)).all)
+        self.assertEqual((dw_error < (eps**2)).all(), True)
 
-    def testThree(self):
+    def test_ReLU(self):
         '''
         neumerically approximate gradient and check network gradients
         were correctly computed
@@ -231,7 +250,7 @@ class bpropTests(unittest.TestCase):
         # instantiate model
         model = Model(layers, dataset, CrossEntropy(), class_task=True)
 
-        model.fit((X_check, Y_check), 3, verbose=False)
+        model.fit((X_check, Y_check), 4, verbose=False)
 
         configs = [(0, False, (0, 0)),
                    (0, False, (60, 62)),
@@ -255,14 +274,14 @@ class bpropTests(unittest.TestCase):
 
         dw_error = np.array(dw_error)
 
-        self.assertTrue((dw_error < (eps**2)).all)
+        self.assertEqual((dw_error < (eps**2)).all(), True)
 
-    def testFour(self):
+    def test_Logistic_Sigmoid(self):
         '''
         neumerically approximate gradient and check network gradients
         were correctly computed
 
-        Check ReLU and Logistic_Sigmoid in a deeper network
+        Check Logistic_Sigmoid
         '''
         # Extract data
         ((X_train, Y_train), (_0, _1)) = load_mnist_data('dataset/mnist/')
@@ -274,7 +293,7 @@ class bpropTests(unittest.TestCase):
 
         dataset = (X_train, t_train)
 
-        b_size = 1
+        b_size = 2
         # take out only a few samples for gradent check
         X_check, Y_check = X_train[0:b_size], t_train[0:b_size]
 
@@ -282,9 +301,7 @@ class bpropTests(unittest.TestCase):
         Model.nu = 1e-3
 
         # define model structure
-        layers = [Linear(out_shape=64, activation=ReLU(), bias=True,
-                         init='lecun_normal'),
-                  Linear(out_shape=64, activation=Logistic_Sigmoid(),
+        layers = [Linear(out_shape=64, activation=Logistic_Sigmoid(),
                          bias=True, init='lecun_normal'),
                   Linear(out_shape=10, activation=Softmax(), bias=True,
                          init='lecun_normal')]
@@ -292,22 +309,18 @@ class bpropTests(unittest.TestCase):
         # instantiate model
         model = Model(layers, dataset, CrossEntropy(), class_task=True)
 
-        model.fit((X_check, Y_check), 3, verbose=False)
+        model.fit((X_check, Y_check), 4, verbose=False)
 
         configs = [(0, False, (0, 0)),
                    (0, False, (60, 62)),
                    (2, False, (0, 0)),
                    (2, False, (4, 6)),
                    (0, False, (10, 26)),
-                   (2, False, (7, 61)),
+                   (2, False, (7, 3)),
                    (0, True, (0)),
                    (0, True, (20)),
                    (2, True, (0)),
-                   (2, True, (5)),
-                   (4, False, (0, 0)),
-                   (4, False, (9, 4)),
-                   (4, True, (0)),
-                   (4, True, (8))]
+                   (2, True, (5))]
         eps = np.arange(.0001, .2, .0001)
         dw_error = []
         for config in configs:
@@ -320,12 +333,61 @@ class bpropTests(unittest.TestCase):
 
         dw_error = np.array(dw_error)
 
-        self.assertTrue((dw_error < (eps**2)).all)
+        self.assertEqual((dw_error < (eps**2)).all(), True)
 
+    def test_SM_and_Linear(self):
+        '''
+        neumerically approximate gradient and check network gradients
+        were correctly computed
 
-def main():
-    unittest.main()
+        Check Softmax with shortcut
+        '''
+        # Extract data
+        ((X_train, Y_train), (_0, _1)) = load_mnist_data('dataset/mnist/')
+
+        # put data values \in [-1, 1]
+        [X_train] = _d_range([X_train])
+
+        t_train = one_hot(Y_train, m=10)
+
+        dataset = (X_train, t_train)
+
+        b_size = 2
+        # take out only a few samples for gradent check
+        X_check, Y_check = X_train[0:b_size], t_train[0:b_size]
+
+        Model._numerical_grad = _numerical_grad
+        Model.nu = 1e-3
+
+        # define model structure
+        layers = [Linear(out_shape=10, activation=Softmax(), bias=True,
+                         init='lecun_normal')]
+
+        # instantiate model
+        model = Model(layers, dataset, CrossEntropy(), class_task=True)
+
+        model.fit((X_check, Y_check), 4, verbose=False)
+
+        configs = [(0, False, (0, 0)),
+                   (0, False, (256, 9)),
+                   (0, True, (0)),
+                   (0, True, (4))]
+        eps = np.arange(.0001, .2, .0001)
+        dw_error = []
+        for config in configs:
+            dw_e = []
+            for ep in eps:
+                e = model._numerical_grad((X_check, Y_check),
+                                          config, ep)
+                dw_e += [e]
+            dw_error += [dw_e]
+
+        dw_error = np.array(dw_error)
+
+        assert (dw_error < (eps**2)).all()
+
+        self.assertEqual((dw_error < (eps**2)).all(), True)
 
 
 if __name__ == '__main__':
-    main()
+    unittest.main()

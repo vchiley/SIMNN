@@ -215,7 +215,7 @@ class PM_BN(Layer):
         :type alpha: Number
         '''
         # create layers deltas i.e. transform deltas using linear layer
-        self.deltas = p_deltas
+        self.deltas = p_deltas - np.mean(p_deltas, axis=0)
 
         # update weights based on deltas
         self._param_update(p_deltas, alpha)
