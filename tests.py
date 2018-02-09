@@ -61,7 +61,7 @@ def _numerical_grad(self, data, weight_def, epsilon):
     c_n = self.cost.fprop(t, y)
 
     # find numerical approximation of gradient
-    dw_n = (c_p - c_n) / (2 * epsilon) * len(x)
+    dw_n = (c_p - c_n) / (2 * epsilon)
 
     # reset weight
     w[idx] += epsilon

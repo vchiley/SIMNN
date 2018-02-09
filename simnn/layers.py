@@ -146,8 +146,9 @@ class Linear(Layer):
         :type alpha: Number
         '''
         # compute Gradient
-        self.d_W = self.x.T.dot(p_deltas)  # create weight gradient
-        self.d_b = np.sum(p_deltas, axis=0)  # create bias gradient
+        self.d_W = self.x.T.dot(p_deltas) / len(self.x)
+        # create bias gradient
+        self.d_b = np.mean(p_deltas, axis=0)
 
         # update weights by taking gradient step
         self.W -= alpha * self.d_W
@@ -232,8 +233,8 @@ class PM_BN(Layer):
         :param alpha: learning rate
         :type alpha: Number
         '''
-        # compute Gradient
-        self.d_b = np.sum(p_deltas, axis=0)  # create bias gradient
+        # compute bias Gradient
+        self.d_b = np.mean(p_deltas, axis=0)
 
         # update bias by taking gradient step
         self.b -= alpha * self.d_b
