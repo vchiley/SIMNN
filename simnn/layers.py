@@ -100,7 +100,8 @@ class Linear(Layer):
         '''
         allocate layer parameters
         '''
-        self.W, self.b = initializer(self)
+        self.W = initializer(self)
+        self.b = np.zeros(self.out_shape, dtype=self.W.dtype)
 
     def fprop(self, x):
         '''
@@ -189,7 +190,7 @@ class PM_BN(Layer):
         '''
         allocate layer parameters
         '''
-        _, self.b = initializer(self)
+        self.b = np.zeros(self.out_shape, dtype=np.float64)
 
     def fprop(self, x):
         '''

@@ -16,11 +16,8 @@ def initializer(layer):
         distribution
         '''
         w = layer.init * np.random.randn(layer.in_shape, layer.out_shape)
-        b = 0
-        if layer.bias:
-            b = layer.init * np.random.randn(layer.out_shape)
 
-        return w, b
+        return w
 
     elif layer.init == 'lecun_normal':
         return lecun_normal(layer)
@@ -48,11 +45,8 @@ def lecun_normal(layer):
     fan_in = layer.in_shape
     std_dev = 1 / np.sqrt(fan_in)
     w = std_dev * np.random.randn(layer.in_shape, layer.out_shape)
-    b = 0
-    if layer.bias:
-        b = std_dev * np.random.randn(layer.out_shape)
 
-    return w, b
+    return w
 
 
 def xavier_normal(layer):
@@ -62,22 +56,16 @@ def xavier_normal(layer):
     std_dev = np.sqrt(2 / (fan_in + fan_out))
 
     w = std_dev * np.random.randn(layer.in_shape, layer.out_shape)
-    b = 0
-    if layer.bias:
-        b = std_dev * np.random.randn(layer.out_shape)
 
-    return w, b
+    return w
 
 
 def he_normal(layer):
     fan_in = layer.in_shape
     std_dev = 2 / np.sqrt(fan_in)
     w = std_dev * np.random.randn(layer.in_shape, layer.out_shape)
-    b = 0
-    if layer.bias:
-        b = std_dev * np.random.randn(layer.out_shape)
 
-    return w, b
+    return w
 
 
 def lecun_uniform(layer):
@@ -85,12 +73,8 @@ def lecun_uniform(layer):
     lim = np.sqrt(3 / fan_in)
     w = np.random.uniform(low=-lim, high=lim,
                           size=(layer.in_shape, layer.out_shape))
-    b = 0
-    if layer.bias:
-        b = np.random.uniform(low=-lim, high=lim,
-                              size=(layer.out_shape))
 
-    return w, b
+    return w
 
 
 def xavier_uniform(layer):
@@ -99,12 +83,8 @@ def xavier_uniform(layer):
     lim = np.sqrt(6 / (fan_in + fan_out))
     w = np.random.uniform(low=-lim, high=lim,
                           size=(layer.in_shape, layer.out_shape))
-    b = 0
-    if layer.bias:
-        b = np.random.uniform(low=-lim, high=lim,
-                              size=(layer.out_shape))
 
-    return w, b
+    return w
 
 
 def he_uniform(layer):
@@ -113,9 +93,4 @@ def he_uniform(layer):
     w = np.random.uniform(low=-lim, high=lim,
                           size=(layer.in_shape, layer.out_shape))
 
-    b = 0
-    if layer.bias:
-        b = np.random.uniform(low=-lim, high=lim,
-                              size=(layer.out_shape))
-
-    return w, b
+    return w
