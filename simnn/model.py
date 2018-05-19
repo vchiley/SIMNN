@@ -300,7 +300,7 @@ class Model(object):
                 acc = self._accuracy_rate(self.target, y)
                 self.acc_e += [acc]  # store over time
         cost = self.cost.fprop(self.target, y)
-        self.cost_e += [cost]
+        self.cost_e += [cost / len(y)]
 
         if self.X_val is not None:
             y = self.net_fprop(self.X_val)
@@ -313,7 +313,7 @@ class Model(object):
                     v_acc = self._accuracy_rate(self.target_val, y)
                     self.v_acc_e += [v_acc]  # store over time
             v_cost = self.cost.fprop(self.target_val, y)
-            self.v_cost_e += [v_cost]
+            self.v_cost_e += [v_cost / len(y)]
 
         # print out epoch training point
         if verbose:

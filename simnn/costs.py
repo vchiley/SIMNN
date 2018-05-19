@@ -64,7 +64,7 @@ class CrossEntropy(Cost):
 
         y = np.clip(y, self.ep_clip, 1.)  # ensure log(0) doesn't happen
 
-        self.y = - np.sum(t * np.log(y)) / len(y)
+        self.y = - np.sum(np.log(y[np.where(t == 1)]))
 
         return self.y
 
@@ -117,7 +117,7 @@ class BinaryCrossEntropy(Cost):
 
         y = np.clip(y, self.ep_clip, 1.)  # ensure log(0) doesn't happen
 
-        self.y = - np.sum((t * np.log(y) + (1 - t) * np.log(1 - y)) / len(y))
+        self.y = - np.sum((t * np.log(y) + (1 - t) * np.log(1 - y)))
 
         return self.y
 
