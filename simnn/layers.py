@@ -29,7 +29,7 @@ class Layer(object):
     '''
 
     def __init__(self, out_shape, activation=None, bias=False,
-                 in_shape=None, init=.1, name='Layer'):
+                 in_shape=None, init=.1, name='Layer', dtype=np.float32):
 
         if out_shape:
             assert isinstance(out_shape, int), 'out_shape must be a number'
@@ -39,6 +39,7 @@ class Layer(object):
         self.activation = activation
         self.bias = bias
         self.init = init
+        self.dtype = dtype
         self.in_shape = in_shape
         self.x = None
         self.next_layer = None
@@ -90,17 +91,17 @@ class Linear(Layer):
     '''
 
     def __init__(self, out_shape, activation=None, bias=True,
-                 in_shape=None, init=.1, name='Linear Layer'):
+                 in_shape=None, init=.1, name='Linear Layer', dtype=np.float32):
 
         super(Linear, self).__init__(out_shape, activation=activation,
                                      bias=bias, in_shape=in_shape, init=init,
-                                     name='Linear Layer')
+                                     name='Linear Layer', dtype=dtype)
 
     def allocate(self):
         '''
         allocate layer parameters
         '''
-        self.W = initializer(self)
+        self.W = initializer(self, dtype=self.dtype)
         self.b = np.zeros(self.out_shape, dtype=self.W.dtype)
 
     def fprop(self, x):
@@ -177,10 +178,11 @@ class PM_BN(Layer):
     :type name: str
     '''
 
-    def __init__(self, out_shape, init=.1, name='PM_BN Layer'):
+    def __init__(self, out_shape, init=.1, name='PM_BN Layer',
+                 dtype=np.float32):
 
         super(PM_BN, self).__init__(out_shape, in_shape=out_shape, init=init,
-                                    name='PM_BN')
+                                    name='PM_BN', dtype=dtype)
 
     def __repr__(self):
         rep_str = '{}\n'.format(self.name)
@@ -190,7 +192,7 @@ class PM_BN(Layer):
         '''
         allocate layer parameters
         '''
-        self.b = np.zeros(self.out_shape, dtype=np.float64)
+        self.b = np.zeros(self.out_shape, dtype=self.dtype)
 
     def fprop(self, x):
         '''
