@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 
 from simnn import Model
-from simnn import Linear, PM_BN
+from simnn import Linear, Mean_Center
 from simnn import ReLU, Softmax, Logistic_Sigmoid
 from simnn import CrossEntropy
 from simnn import one_hot
@@ -96,7 +96,7 @@ class bpropTests(unittest.TestCase):
         neumerically approximate gradient and check network gradients
         were correctly computed
 
-        Check PM_BN
+        Check Mean_Center
         '''
         # Extract data
         ((X_train, Y_train), (_0, _1)) = load_mnist_data('dataset/mnist/')
@@ -119,7 +119,7 @@ class bpropTests(unittest.TestCase):
         # define model structure
         layers = [Linear(out_shape=nh, activation=Logistic_Sigmoid(),
                          bias=True, init='lecun_normal'),
-                  PM_BN(nh),
+                  Mean_Center(nh),
                   Linear(out_shape=10, activation=Softmax(), bias=True,
                          init='lecun_normal')]
 

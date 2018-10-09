@@ -102,7 +102,12 @@ class Linear(Layer):
         allocate layer parameters
         '''
         self.W = initializer(self, dtype=self.dtype)
+<<<<<<< HEAD
         self.b = np.zeros(self.out_shape, dtype=self.W.dtype)
+=======
+        if self.bias:
+            self.b = np.zeros(self.out_shape, dtype=self.W.dtype)
+>>>>>>> add BN layer
 
     def fprop(self, x):
         '''
@@ -150,15 +155,17 @@ class Linear(Layer):
         # compute Gradient
         self.d_W = self.x.T.dot(p_deltas)
         # create bias gradient
-        self.d_b = np.sum(p_deltas, axis=0)
+        if self.bias:
+            self.d_b = np.sum(p_deltas, axis=0)
 
         # update weights by taking gradient step
         self.W -= alpha * self.d_W
         # update bias by taking gradient step
-        self.b -= alpha * self.d_b
+        if self.bias:
+            self.b -= alpha * self.d_b
 
 
-class PM_BN(Layer):
+class Mean_Center(Layer):
 
     '''
     "Poor Man Batch Normilization Layer" only mean centers the data
@@ -178,11 +185,12 @@ class PM_BN(Layer):
     :type name: str
     '''
 
-    def __init__(self, out_shape, init=.1, name='PM_BN Layer',
+    def __init__(self, out_shape, init=.1, bias=True, name='Mean_Center Layer',
                  dtype=np.float32):
 
-        super(PM_BN, self).__init__(out_shape, in_shape=out_shape, init=init,
-                                    name='PM_BN', dtype=dtype)
+        super(Mean_Center, self).__init__(out_shape, in_shape=out_shape,
+                                          bias=bias, init=init, name=name,
+                                          dtype=dtype)
 
     def __repr__(self):
         rep_str = '{}\n'.format(self.name)
@@ -205,7 +213,8 @@ class PM_BN(Layer):
 
         self.y = self.x - np.mean(self.x, axis=0)
 
-        self.y += self.b  # learned undo of mean centering
+        if self.bias:
+            self.y += self.b  # learned undo of mean centering
 
         return self.y
 
@@ -237,7 +246,133 @@ class PM_BN(Layer):
         :type alpha: Number
         '''
         # compute bias Gradient
-        self.d_b = np.sum(p_deltas, axis=0)
+        if self.bias:
+            self.d_b = np.sum(p_deltas, axis=0)
 
         # update bias by taking gradient step
-        self.b -= alpha * self.d_b
+        if self.bias:
+            self.b -= alpha * self.d_b
+
+
+class BatchNormalization(Layer):
+    '''
+    Batch Normalization Layer
+    - No scale or offset
+
+    :param out_shape: output shape
+    :type out_shape: int
+    :param activation: activation type
+    :type activation: activation
+    :param in_shape: define input data shape
+    :type in_shape: int
+    :param init: parameter initialization method, std.dev. or norm or method
+    :type init: str, Number
+    :param name: layer name
+    :type name: str
+    '''
+
+    def __init__(self, out_shape, init=.1, epsilon=1e-32, axis=(0), bias=True,
+                 name='BatchNormalization Layer', dtype=np.float32):
+
+        self.epsilon = epsilon
+        self.axis = axis
+
+        super(BatchNormalization, self).__init__(out_shape, in_shape=out_shape,
+                                                 init=init, name=name,
+                                                 bias=bias, dtype=dtype)
+
+    def __repr__(self):
+        rep_str = '{}\n'.format(self.name)
+        return rep_str
+
+    def allocate(self):
+        '''
+        allocate layer parameters
+        '''
+        self.b = np.zeros(self.out_shape, dtype=self.dtype)
+
+    def fprop(self, x):
+        '''
+        fprop through the layer
+
+        :param x: layer input
+        :type x: np.ndarray
+        '''
+        self.x = x.copy()
+
+        mu = np.mean(self.x, axis=self.axis, keepdims=True)
+        var = np.var(self.x, axis=self.axis, keepdims=True)
+        self.scale = np.sqrt(var + self.epsilon)
+
+        # normalize
+        self.y = (self.x - mu) / self.scale
+
+        if self.bias:
+            self.y += self.b
+
+        return self.y
+
+    def bprop(self, p_deltas, alpha):
+        '''
+        bprop through the layer
+
+        :param p_deltas: propogating errors coming back
+        :type p_deltas: np.ndarray
+        :param alpha: learning rate
+        :type alpha: Number
+        '''
+        # create layers deltas i.e. transform deltas using linear layer
+        u = np.mean(p_deltas, axis=self.axis)
+        y = self.y - self.b
+        v = np.mean(p_deltas * y, axis=self.axis)
+        self.deltas = (p_deltas - u - v * y) / self.scale
+
+        # update weights based on deltas
+        self._param_update(p_deltas, alpha)
+
+        # return deltas
+        return self.deltas
+
+    def _param_update(self, p_deltas, alpha):
+        '''
+        update layer parametres based on p_deltas
+
+        :param p_deltas: propogating errors coming back
+        :type p_deltas: np.ndarray
+        :param alpha: learning rate
+        :type alpha: Number
+        '''
+        # compute bias Gradient
+        if self.bias:
+            self.d_b = np.sum(p_deltas, axis=0)
+
+        # update bias by taking gradient step
+        if self.bias:
+            self.b -= alpha * self.d_b
+
+
+class BatchNormalization1D(BatchNormalization):
+
+    '''
+    Batch Normalization layer for fully connected / dense / linear layers 
+    - No scale or offset
+
+    :param out_shape: output shape
+    :type out_shape: int
+    :param activation: activation type
+    :type activation: activation
+    :param in_shape: define input data shape
+    :type in_shape: int
+    :param init: parameter initialization method, std.dev. or norm or method
+    :type init: str, Number
+    :param name: layer name
+    :type name: str
+    '''
+
+    def __init__(self, out_shape, init=.1, epsilon=1e-32, bias=True,
+                 name='BatchNormalization1D Layer', dtype=np.float32):
+
+        super(BatchNormalization1D, self).__init__(out_shape,
+                                                   axis=(0), epsilon=epsilon,
+                                                   init=init, name=name,
+                                                   bias=bias, dtype=dtype)

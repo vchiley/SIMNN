@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Impliments initializer for SIMNN layers
+Implements initializer for SIMNN layers
 """
 __author__ = 'Vitaliy Chiley'
 __date__ = '01/2018'

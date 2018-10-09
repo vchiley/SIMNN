@@ -111,7 +111,7 @@ class Model(object):
         '''
         set shortcut for network cost / final layer options
 
-        called durring model initialization
+        called during model initialization
         '''
         if isinstance(self.cost, CrossEntropy):
             if isinstance(self.layers[-1], Softmax):
