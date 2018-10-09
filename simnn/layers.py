@@ -102,12 +102,8 @@ class Linear(Layer):
         allocate layer parameters
         '''
         self.W = initializer(self, dtype=self.dtype)
-<<<<<<< HEAD
-        self.b = np.zeros(self.out_shape, dtype=self.W.dtype)
-=======
         if self.bias:
             self.b = np.zeros(self.out_shape, dtype=self.W.dtype)
->>>>>>> add BN layer
 
     def fprop(self, x):
         '''
