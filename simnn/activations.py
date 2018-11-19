@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Impliments activation functions for SIMNN
+Implements activation functions for SIMNN
 """
 __author__ = 'Vitaliy Chiley'
 __date__ = '01/2018'
@@ -32,7 +32,7 @@ class Activation(Layer):
 
 class ReLU(Activation):
     '''
-    Rectifid Linear Unit Activation
+    Rectified Linear Unit Activation
 
     :param name: layer name
     :type name: str
@@ -63,32 +63,30 @@ class ReLU(Activation):
 
         return self.y
 
-    def bprop(self, p_deltas, alpha, use_y=False):
+    def bprop(self, deltas, use_y=False):
         '''
         bprop through the activation
 
-        :param p_deltas: propogating errors coming back
-        :type p_deltas: np.ndarray
-        :param alpha: learning rate
-        :type alpha: Number
+        :param deltas: propagating errors coming back
+        :type deltas: np.ndarray
         :param use_y: defines if layer out should be used to get bprop
         :type use_y: bool
         '''
         if self.use_y:
-            return np.sign(self.y).astype(np.float) * p_deltas
+            return np.sign(self.y).astype(np.float) * deltas
 
         x = self.x.copy()
 
         x[np.where(x < 0)] = 0
 
-        return np.sign(x).astype(np.float) * p_deltas
+        return np.sign(x).astype(np.float) * deltas
 
 
-class Logistic_Sigmoid(Activation):
+class LogisticSigmoid(Activation):
     '''
     Logistic Sigmoid Activation
 
-    Should be the last layer of a network with binary cross entropy coss
+    Should be the last layer of a network with binary cross entropy cost
 
     :param name: layer name
     :type name: str
@@ -96,7 +94,7 @@ class Logistic_Sigmoid(Activation):
 
     def __init__(self, name='Sigmoid'):
 
-        super(Logistic_Sigmoid, self).__init__(out_shape=None, in_shape=None,
+        super(LogisticSigmoid, self).__init__(out_shape=None, in_shape=None,
                                                name=name)
 
         self.shortcut = False
@@ -125,32 +123,30 @@ class Logistic_Sigmoid(Activation):
 
         return self.y
 
-    def bprop(self, p_deltas, alpha, use_y=None):
+    def bprop(self, deltas, use_y=None):
         '''
         bprop through the activation
 
-        :param p_deltas: propogating errors coming back
-        :type p_deltas: np.ndarray
-        :param alpha: learning rate
-        :type alpha: Number
+        :param deltas: propagating errors coming back
+        :type deltas: np.ndarray
         :param use_y: defines if layer out should be used to get bprop
         :type use_y: bool
         '''
         # if this is last layers activation with bin_cross_entropy loss
         if self.shortcut:
-            return 1 * p_deltas
+            return 1 * deltas
 
         if self.use_y:  # use y to compute dir, faster calculation
-            return self.y * (1 - self.y) * p_deltas
+            return self.y * (1 - self.y) * deltas
 
-        return self._fprop(self.x) * self._fprop(-self.x) * p_deltas
+        return self._fprop(self.x) * self._fprop(-self.x) * deltas
 
 
 class Softmax(Activation):
     '''
     Softmax Activation
 
-    Should be the last layer of a network with cross entropy coss
+    Should be the last layer of a network with cross entropy cost
 
     :param name: layer name
     :type name: str
@@ -185,7 +181,7 @@ class Softmax(Activation):
         '''
         fprop through the activation
 
-        Neumerically stable softmax function
+        Numerically stable softmax function
 
         :param x: layer input
         :type x: np.ndarray
@@ -198,23 +194,21 @@ class Softmax(Activation):
 
         return self.y
 
-    def bprop(self, p_deltas, alpha, use_y=False):
+    def bprop(self, deltas, use_y=False):
         '''
         bprop through the activation
 
-        :param p_deltas: propogating errors coming back
-        :type p_deltas: np.ndarray
-        :param alpha: learning rate
-        :type alpha: Number
+        :param deltas: propagating errors coming back
+        :type deltas: np.ndarray
         :param use_y: defines if layer out should be used to get bprop
         :type use_y: bool
         '''
         if self.shortcut:
-            return 1 * p_deltas
+            return 1 * deltas
         if self.use_y:  # use y to compute dir, faster calculation
-            return self.y * (1 - self.y) * p_deltas
+            return self.y * (1 - self.y) * deltas
 
-        return self._fprop(self.x) * self._fprop(-self.x) * p_deltas
+        return self._fprop(self.x) * self._fprop(-self.x) * deltas
 
 
 class Line(Activation):
@@ -247,8 +241,8 @@ class Line(Activation):
 
         return self.y
 
-    def bprop(self, p_deltas, alpha, use_y=False):
-        return self.a * p_deltas
+    def bprop(self, deltas, use_y=False):
+        return self.a * deltas
 
 
 class Identity(Activation):
