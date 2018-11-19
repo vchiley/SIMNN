@@ -18,7 +18,7 @@ class Layer(object):
     :type out_shape: int
     :param activation: activation type
     :type activation: Activation
-    :param bias: boolian defining bias inclusion
+    :param bias: boolean defining bias inclusion
     :type bias: bool
     :param in_shape: define input data shape
     :type in_shape: int
@@ -45,6 +45,7 @@ class Layer(object):
         self.next_layer = None
         self.prev_layer = None
         self.name = name
+        self.param_grads = []
 
         if self.activation:
             self.activation.out_shape = self.out_shape
@@ -80,7 +81,7 @@ class Linear(Layer):
     :type out_shape: int
     :param activation: activation type
     :type activation: Activation
-    :param bias: boolian defining bias inclusion
+    :param bias: boolean defining bias inclusion
     :type bias: bool
     :param in_shape: define input data shape
     :type in_shape: int
@@ -121,57 +122,49 @@ class Linear(Layer):
 
         return self.y
 
-    def bprop(self, p_deltas, alpha):
+    def bprop(self, deltas):
         '''
         bprop through the layer
 
-        :param p_deltas: propogating errors coming back
-        :type p_deltas: np.ndarray
-        :param alpha: learning rate
-        :type alpha: Number
+        :param deltas: propagating errors coming back
+        :type deltas: np.ndarray
         '''
         # create layers deltas i.e. transform deltas using linear layer
-        self.deltas = p_deltas.dot(self.W.T)
+        grad_deltas = deltas.dot(self.W.T)
 
         # update weights based on deltas
-        self._param_update(p_deltas, alpha)
+        self.param_grads = self._param_grad(deltas)
 
         # return deltas
-        return self.deltas
+        return grad_deltas
 
-    def _param_update(self, p_deltas, alpha):
+    def _param_grad(self, deltas):
         '''
-        update layer parametres based on p_deltas
+        update layer parameters based on deltas
 
-        :param p_deltas: propogating errors coming back
-        :type p_deltas: np.ndarray
-        :param alpha: learning rate
-        :type alpha: Number
+        :param deltas: propagating errors coming back
+        :type deltas: np.ndarray
         '''
         # compute Gradient
-        self.d_W = self.x.T.dot(p_deltas)
+        self.d_W = self.x.T.dot(deltas)
         # create bias gradient
         if self.bias:
-            self.d_b = np.sum(p_deltas, axis=0)
+            self.d_b = np.sum(deltas, axis=0)
+            return [(self.W, self.d_W), (self.b, self.d_b)]
 
-        # update weights by taking gradient step
-        self.W -= alpha * self.d_W
-        # update bias by taking gradient step
-        if self.bias:
-            self.b -= alpha * self.d_b
-
+        return [(self.W, self.d_W)]
 
 class Mean_Center(Layer):
 
     '''
-    "Poor Man Batch Normilization Layer" only mean centers the data
+    "Poor Man Batch Normalization Layer" only mean centers the data
     does not actually z-score the batch
 
     :param out_shape: output shape
     :type out_shape: int
     :param activation: activation type
     :type activation: activation
-    :param bias: boolian defining bias inclusion, this layer is dependent on it
+    :param bias: boolean defining bias inclusion, this layer is dependent on it
     :type bias: bool
     :param in_shape: define input data shape
     :type in_shape: int
@@ -214,40 +207,35 @@ class Mean_Center(Layer):
 
         return self.y
 
-    def bprop(self, p_deltas, alpha):
+    def bprop(self, deltas):
         '''
         bprop through the layer
 
-        :param p_deltas: propogating errors coming back
-        :type p_deltas: np.ndarray
-        :param alpha: learning rate
-        :type alpha: Number
+        :param deltas: propagating errors coming back
+        :type deltas: np.ndarray
         '''
         # create layers deltas i.e. transform deltas using linear layer
-        self.deltas = p_deltas - np.mean(p_deltas, axis=0)
+        grad_deltas = deltas - np.mean(deltas, axis=0)
 
         # update weights based on deltas
-        self._param_update(p_deltas, alpha)
+        self.param_grads = self._param_grad(deltas)
 
         # return deltas
-        return self.deltas
+        return grad_deltas
 
-    def _param_update(self, p_deltas, alpha):
+    def _param_grad(self, deltas):
         '''
-        update layer parametres based on p_deltas
+        update layer parametres based on deltas
 
-        :param p_deltas: propogating errors coming back
-        :type p_deltas: np.ndarray
-        :param alpha: learning rate
-        :type alpha: Number
+        :param deltas: propogating errors coming back
+        :type deltas: np.ndarray
         '''
         # compute bias Gradient
         if self.bias:
-            self.d_b = np.sum(p_deltas, axis=0)
+            self.d_b = np.sum(deltas, axis=0)
+            return [(self.b, self.d_b)]
 
-        # update bias by taking gradient step
-        if self.bias:
-            self.b -= alpha * self.d_b
+        return []
 
 
 class BatchNormalization(Layer):
@@ -308,43 +296,37 @@ class BatchNormalization(Layer):
 
         return self.y
 
-    def bprop(self, p_deltas, alpha):
+    def bprop(self, deltas):
         '''
         bprop through the layer
 
-        :param p_deltas: propogating errors coming back
-        :type p_deltas: np.ndarray
-        :param alpha: learning rate
-        :type alpha: Number
+        :param deltas: propagating errors coming back
+        :type deltas: np.ndarray
         '''
         # create layers deltas i.e. transform deltas using linear layer
-        u = np.mean(p_deltas, axis=self.axis)
-        y = self.y - self.b
-        v = np.mean(p_deltas * y, axis=self.axis)
-        self.deltas = (p_deltas - u - v * y) / self.scale
+        u = np.mean(deltas, axis=self.axis)
+        v = np.mean(deltas * self.y, axis=self.axis)
+        grad_deltas = (deltas - u - v * self.y) / self.scale
 
         # update weights based on deltas
-        self._param_update(p_deltas, alpha)
+        self.param_grads = self._param_grads(deltas)
 
         # return deltas
-        return self.deltas
+        return grad_deltas
 
-    def _param_update(self, p_deltas, alpha):
+    def _param_grads(self, deltas):
         '''
-        update layer parametres based on p_deltas
+        update layer parametres based on deltas
 
-        :param p_deltas: propogating errors coming back
-        :type p_deltas: np.ndarray
-        :param alpha: learning rate
-        :type alpha: Number
+        :param deltas: propogating errors coming back
+        :type deltas: np.ndarray
         '''
         # compute bias Gradient
         if self.bias:
-            self.d_b = np.sum(p_deltas, axis=0)
+            self.d_b = np.sum(deltas, axis=0)
+            return [(self.b, self.d_b)]
 
-        # update bias by taking gradient step
-        if self.bias:
-            self.b -= alpha * self.d_b
+        return []
 
 
 class BatchNormalization1D(BatchNormalization):

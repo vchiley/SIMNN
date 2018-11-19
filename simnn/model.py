@@ -33,7 +33,7 @@ class Model(object):
     :type name: str
     '''
 
-    def __init__(self, layers, dataset, cost,
+    def __init__(self, layers, dataset, cost, optimizer,
                  bin_class_task=False, class_task=False, name='Model'):
         self.name = name
         # define if this is a classification task
@@ -82,6 +82,8 @@ class Model(object):
 
         self.early_stop = False
 
+        self.optimizer = optimizer
+
     def __repr__(self):
         rep_str = '{}, '.format(self.name)
         rep_str += 'in_shape: {}, '.format(self.in_shape)
@@ -95,9 +97,9 @@ class Model(object):
 
     def _init_stat_holders(self):
         '''
-        initialize containers to hold trainig statistics
+        initialize containers to hold training statistics
 
-        called durring model initialization
+        called during model initialization
         '''
         # for entire epoch
         self.acc_e, self.v_acc_e = [], []  # accuracies
@@ -118,7 +120,7 @@ class Model(object):
                 self.layers[-1].shortcut = True
 
         if isinstance(self.cost, BinaryCrossEntropy):
-            if isinstance(self.layers[-1], Logistic_Sigmoid):
+            if isinstance(self.layers[-1], LogisticSigmoid):
                 self.layers[-1].shortcut = True
 
     def _early_stop_acc(self, metric, eps, n):
@@ -214,7 +216,7 @@ class Model(object):
 
         :param all_idx: all the indicies of the dataset
         :type all_idx: np.ndarray
-        :param b_size: batchsize to break up the idx into
+        :param b_size: batch size to break up the idx into
         :type b_size: int
         '''
         for i in range(0, len(all_idx), b_size):
@@ -258,7 +260,7 @@ class Model(object):
 
     def net_fprop(self, x):
         '''
-        fprop throught the network
+        fprop through the network
 
         :param x: training examples / network inputs
         :type x: np.ndarray
@@ -270,7 +272,7 @@ class Model(object):
 
     def net_bprop(self, target, y):
         '''
-        bprop throught the network and optimize parameters
+        bprop through the network and optimize parameters
 
         :param target: training targets
         :type target: np.ndarray
@@ -279,7 +281,10 @@ class Model(object):
         '''
         error = self.cost.bprop(target, y)
         for layer in self.layers[::-1]:
-            error = layer.bprop(error, self.nu)
+            error = layer.bprop(error)
+
+        self.optimizer.minimize(self.layers, self.nu)
+
 
     def _epoch_stats(self, ep, verbose=0):
         '''
@@ -342,11 +347,11 @@ class Model(object):
         :type val_set: tuple
         :param initial_learn: initial learning rate
         :type initial_learn: Number
-        :param aneal_T: anealing parameter
+        :param aneal_T: annealing parameter
         :type aneal_T: int
         :param shuffle: shuffle data after each epoch
         :type shuffle: bool
-        :param b_size: batchsize over which to train, -1 = full batch training
+        :param b_size: batch size over which to train, -1 = full batch training
         :type b_size: int
         :param verbose: print training informations or not
         :type verbose: bool
