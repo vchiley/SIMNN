@@ -255,7 +255,7 @@ class BatchNormalization(Layer):
     :type name: str
     '''
 
-    def __init__(self, out_shape, init=.1, epsilon=1e-32, axis=(0), bias=True,
+    def __init__(self, out_shape, init=.1, epsilon=1e-32, axis=(0), bias=False,
                  name='BatchNormalization Layer', dtype=np.float32):
 
         self.epsilon = epsilon
@@ -273,7 +273,7 @@ class BatchNormalization(Layer):
         '''
         allocate layer parameters
         '''
-        self.b = np.zeros(self.out_shape, dtype=self.dtype)
+        pass
 
     def fprop(self, x):
         '''
@@ -290,9 +290,6 @@ class BatchNormalization(Layer):
 
         # normalize
         self.y = (self.x - mu) / self.scale
-
-        if self.bias:
-            self.y += self.b
 
         return self.y
 
@@ -321,10 +318,6 @@ class BatchNormalization(Layer):
         :param deltas: propogating errors coming back
         :type deltas: np.ndarray
         '''
-        # compute bias Gradient
-        if self.bias:
-            self.d_b = np.sum(deltas, axis=0)
-            return [(self.b, self.d_b)]
 
         return []
 
